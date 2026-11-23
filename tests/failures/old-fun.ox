@@ -1,0 +1,1 @@
+fun square x = x * x

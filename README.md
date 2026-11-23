@@ -181,3 +181,13 @@ create a recursive binding; use `val rec` when the body refers to `f`.
 
 Run `sh examples/2025/check.sh` for both AoC samples and the recursion
 smoke test. `ox check` parses syntax but is not yet a type checker.
+
+## Conformance tests (Patch 007)
+
+Run `dune runtest` to execute the independent `tests/` suite: parser
+acceptance, successful evaluation, and expected syntax/runtime failures.
+The suite lives outside the seven production implementation files.
+See [`tests/README.md`](tests/README.md).
+
+Every subsequent language-semantics patch must include a regression test
+in `tests/`; `examples/` remains for human-readable Advent of Code solutions.
