@@ -138,6 +138,7 @@ and eval env expr =
     | EIf (condition, yes, no) ->
         if as_bool (eval env condition) then eval env yes else eval env no
     | EFn (pat, body) -> Closure (pat, body, env)
+    | EParen x -> eval env x
     | ECase (value, branches) ->
         let v = eval env value in
         let rec choose = function
@@ -196,7 +197,7 @@ and declare env decl =
              let recursive_env = (name, cell) :: env in
              cell := Closure (pat, body, recursive_env);
              recursive_env
-         | _ -> fail "val rec requires a fn initializer")
+         | _ -> fail "rec requires an arrow-function initializer")
     | DDatatype (_, constructors) ->
         List.fold_left (fun env (name, payload) ->
           let ctor = match payload with

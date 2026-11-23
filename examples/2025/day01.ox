@@ -4,7 +4,7 @@ datatype turn = Left of int | Right of int
 
 val start = {position = 50, stops = 0, passes = 0}
 
-val parse_turn = fn line =>
+val parse_turn = (line) =>
   do
     val direction = S.sub line 0 1;
     val clicks = I.parse (S.sub line 1 (S.length line - 1));
@@ -13,12 +13,12 @@ val parse_turn = fn line =>
       | "L" => Left clicks
   end
 
-val movement = fn turn =>
+val movement = (turn) =>
   case turn of
       Right clicks => clicks
     | Left clicks => -clicks
 
-val crossings = fn (state, turn) =>
+val crossings = (state, turn) =>
   case turn of
       Right clicks => (state.position + clicks) div 100
     | Left clicks =>
@@ -27,7 +27,7 @@ val crossings = fn (state, turn) =>
           1 + (clicks - state.position) div 100
         else 0
 
-val advance = fn (state, turn) =>
+val advance = (state, turn) =>
   do
     val moved = (state.position + movement turn) mod 100 + 100;
     val position = moved mod 100;

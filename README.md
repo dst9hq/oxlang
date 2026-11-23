@@ -4,7 +4,7 @@ A small, data-oriented scripting language with Standard ML-inspired syntax,
 implemented in OxCaml, with Menhir and ocamllex.
 
 **Planning choices:** No C FFI, classes, methods, or `switch` statement.
-Bindings use `val`, functions are `fn` values (with `val rec` for recursion),
+Bindings use `val`, functions use `(parameters) => body` (with `rec` at the function site),
 variants use `datatype`, and branching uses SML-style `case ... of`.
 
 ## Build
@@ -34,7 +34,7 @@ Create `smoke.ox`:
 ```sml
 #!/usr/bin/env ox
 val numbers = [1, 2, 3, 4, 5]
-val sum = fn xs => L.foldl (fn (n, acc) => n + acc) 0 xs
+val sum = (xs) => L.foldl ((n, acc) => n + acc) 0 xs
 val _ = P.printf "%d\n" (sum numbers)
 ```
 
@@ -45,13 +45,13 @@ Run `ox smoke.ox`. The expected output is `15`.
 ```sml
 #!/usr/bin/env ox
 val numbers = L.map I.parse (S.lines (U.read "input.txt"))
-val total = L.foldl (fn (x, acc) => x + acc) 0 numbers
+val total = L.foldl ((x, acc) => x + acc) 0 numbers
 val _ = P.printf "%d\n" total
 ```
 
 ## Function composition and forward application (Patch 002)
 
-`o` constructs a composed function (`f o g` means `fn x => f (g x)`).
+`o` constructs a composed function (`f o g` means `(x) => f (g x)`).
 It associates to the right. `|>` passes a value to a function; it
 associates to the left and binds more loosely than other operators.
 A pipe evaluates its **left-hand value first**, before evaluating its
@@ -62,18 +62,18 @@ right-hand function.
 val numbers = U.read "input.txt" |> S.lines |> L.map I.parse
 val read_numbers = L.map I.parse o S.lines o U.read
 val same = read_numbers "input.txt"
-val total = numbers |> L.foldl (fn (x, acc) => x + acc) 0
+val total = numbers |> L.foldl ((x, acc) => x + acc) 0
 val _ = P.printf "%d\n" total
 ```
 
 In a pipeline, partial application is supported: `xs |> L.map f` is
-`L.map f xs`. Parenthesize complex functions, e.g. `xs |> (fn xs => xs)`.
+`L.map f xs`. Parenthesize complex functions, e.g. `xs |> ((xs) => xs)`.
 
 ## Datatypes and cases
 
 ```sml
 datatype result = Ok of int | Error of string
-val describe = fn result =>
+val describe = (result) =>
   case result of
       Ok n => P.sprintf "%d" n
     | Error msg => msg
@@ -100,7 +100,7 @@ Process results are records with `status`, `stdout`, and `stderr`.
 ## Language subset
 
 Integers, floats, strings, booleans, lists (`[1, 2]`), arrays (`[|1, 2|]`),
-tuples (`(1, 2)`), records (`{x = 1, y = 2}`), functions, recursion through `val rec`,
+tuples (`(1, 2)`), records (`{x = 1, y = 2}`), arrow functions, recursion with `rec`,
 `if ... then ... else ...`, `do ... end`, constructors, and `case`.
 Inside `do`, every declaration ends with `;` and the final expression
 is the result: `do val x = 1; x + 2 end`. The last expression does not
@@ -109,7 +109,7 @@ successive lines. Record punning is supported: `{x, y}` is equivalent to
 `{x = x, y = y}` and constructs a new record from the variables in scope.
 
 ```sml
-val advance = fn (state, delta) =>
+val advance = (state, delta) =>
   do
     val position = state.position + delta;
     val stops = state.stops + 1;
@@ -148,39 +148,50 @@ ox examples/2025/day02.ox examples/2025/day02.txt
 sh examples/2025/check.sh
 ```
 
-The AoC examples use Patch 006 `val`/`val rec` function declarations.
+The AoC examples use Patch 010 arrow functions and function-site `rec`.
 
-## Patch 006: functions are values
+## Patch 010: arrow functions and recursion at the function site
 
-The `fun` keyword is removed from ox source. Use `val` and `fn` for functions;
-recursive functions use `val rec` and must have a lambda initializer.
-Parenthesized lambdas are permitted. Multi-argument functions are written
-using tuples or nested `fn` expressions.
+`val` is the sole value-binding construct. A function expression uses a
+parenthesized parameter pattern and `=>`; `->` introduces additional curried
+parameters. `rec` appears immediately after `=` in a *named* `val` binding.
 
 ```sml
-val square = fn x => x * x
-val add = fn x => fn y => x + y
-val rec factorial = fn n =>
+val square = (x) => x * x
+val add_tuple = (x, y) => x + y
+val add = (x) -> (y) => x + y
+val factorial = rec (n) =>
   if n == 0 then 1 else n * factorial (n - 1)
 ```
 
-Within `do ... end`, each `val` declaration (including `val rec`) must end
-with `;`, and the final result expression has no semicolon.
+The curried function desugars to nested closures: `(x) -> (y) => e`
+means `(x) => ((y) => e)`. Each function takes exactly one value;
+`(x, y)` destructures one tuple value, whereas `(x) -> (y)` receives
+arguments one at a time. Parentheses around each parameter pattern are
+mandatory; JavaScript's unparenthesized `x => ...` is not ox syntax.
+
+`rec` is a function-site modifier that is valid only as the direct
+initializer of a named `val`; it is not a general recursive expression.
+The interpreter captures a self-referential lexical environment for the
+outer closure. This applies equally to curried recursive functions.
+
+Within `do ... end`, each declaration ends in `;`, and the final expression
+returns the block's result without a semicolon:
 
 ```sml
 val result =
   do
-    val rec loop = fn (n, total) =>
+    val loop = rec (n, total) =>
       if n == 0 then total else loop (n - 1, total + n);
     loop (5, 0)
   end
 ```
 
-`val rec x = x + 1` is a syntax error. `val f = fn x => f x` does not
-create a recursive binding; use `val rec` when the body refers to `f`.
+Older `fun`, `fn`, and `val rec` syntax is rejected. A plain `val f = (x) => f x`
+does *not* make `f` recursive: use `val f = rec (x) => f x` instead.
 
 Run `sh examples/2025/check.sh` for both AoC samples and the recursion
-smoke test. `ox check` parses syntax but is not yet a type checker.
+smoke test. `ox check` validates syntax, not static types or effects.
 
 ## Conformance tests (Patch 007)
 
@@ -200,18 +211,15 @@ separator, for example `val x = 3`, `datatype color = Red | Blue`, and
 
 ## Patch 009: data-first transformations and tuple arguments
 
-Use a single tuple parameter when several values jointly define one operation:
-`val repeated = fn (text, width) => ...`. Use nested `fn` when partial
-application is useful (`val add = fn x => fn y => x + y`); prelude functions
-remain curried. These are style conventions, not new grammar rules.
+Use a tuple argument when several values jointly define one operation:
+`val repeated = (text, width) => ...`. Use `->` for intentional currying:
+`val add = (x) -> (y) => x + y`. Prelude functions remain curried.
 
-For nontrivial transformations, compute named intermediate values in
-`do ... end`, terminate each declaration with `;`, and leave the final
-expression without a semicolon. Especially in recursive functions, calculate
-the next state before the recursive call:
+Compute named intermediate values in `do ... end`, terminate every local
+`val` declaration with `;`, and keep the final expression free of `;`:
 
 ```sml
-val rec count = fn (current, upper, total) =>
+val count = rec (current, upper, total) =>
   if current > upper then total
   else
     do
@@ -222,7 +230,6 @@ val rec count = fn (current, upper, total) =>
     end
 ```
 
-The Day 2 example follows this pattern throughout. The project now includes
-`spec/definition-of-ox.tex` and its compiled PDF as the versioned language
-definition, updated through Patch 009. The seven-file implementation limit
-continues to exclude tests, examples, and the specification.
+The Day 2 example follows this style. See `spec/definition-of-ox.tex`
+for the formal grammar and semantics, updated through Patch 010. The
+seven-file implementation budget excludes tests, examples, and the spec.

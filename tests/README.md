@@ -36,3 +36,8 @@ Patch 009 adds `tuple-transformations.ox` for one-tuple function parameters,
 short-circuit validation, `==`, `do` declaration sequencing, named
 intermediates, and recursive accumulation. The test is independent of AoC
 fixture parsing.
+
+Patch 010 adds `arrow-functions.ox` for tuple parameters, right-nested curried
+closures, local and top-level recursion, anonymous callbacks, wildcard/unit
+parameters, and constructor patterns. Negative tests reject `fn`, `val rec`,
+bare `x =>`, invalid parameter expressions, and non-name recursive bindings.

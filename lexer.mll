@@ -22,7 +22,6 @@ rule token = parse
   | '"' { Buffer.clear string_buf; quoted lexbuf }
   | "val" { VAL }
   | "rec" { REC }
-  | "fn" { FN }
   | "datatype" { DATATYPE }
   | "case" { CASE }
   | "of" { OF }
@@ -44,6 +43,7 @@ rule token = parse
   | "[|" { LARRAY }
   | "|]" { RARRAY }
   | "=>" { DARROW }
+  | "->" { ARROW }
   | "::" { CONS }
   | "|>" { PIPE }
   | "/=" { NE }

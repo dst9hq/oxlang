@@ -2,17 +2,45 @@
 open Ast
 let e a b node = located a b node
 let d a b node = located a b node
+
+(* Parameter heads are parsed as parenthesized expressions, then checked
+   as patterns. This avoids an LR conflict between (pattern) and (expr). *)
+let rec parameter_pattern x = match x.node with
+  | EParen inner -> pattern_body inner
+  | _ -> failwith "syntax error: arrow parameters must be parenthesized"
+and pattern_body x = match x.node with
+  | EParen inner -> pattern_body inner
+  | EVar "_" -> PWild
+  | EVar name when String.length name > 0 && name.[0] >= 'A' && name.[0] <= 'Z' ->
+      PCtor (name, None)
+  | EVar name -> PVar name
+  | EInt n -> PInt n
+  | ENeg { node = EInt n; _ } -> PInt (-n)
+  | EBool b -> PBool b
+  | EString s -> PString s
+  | EUnit -> PUnit
+  | ETuple xs -> PTuple (List.map pattern_body xs)
+  | EList xs -> PList (List.map pattern_body xs)
+  | EBin ("::", a, b) -> PCons (pattern_body a, pattern_body b)
+  | EApp ({ node = EVar name; _ }, arg) when
+      String.length name > 0 && name.[0] >= 'A' && name.[0] <= 'Z' ->
+      PCtor (name, Some (pattern_body arg))
+  | _ -> failwith "syntax error: invalid arrow parameter pattern"
+
+let make_lambda start finish head (rest, body) =
+  let params = List.map parameter_pattern (head :: rest) in
+  List.fold_right (fun pat body -> e start finish (EFn (pat, body))) params body
 %}
 
 %token <int> INT
 %token <float> FLOAT
 %token <string> STRING IDENT UIDENT
-%token VAL REC FN DATATYPE OF CASE IF THEN ELSE DO END
+%token VAL REC DATATYPE OF CASE IF THEN ELSE DO END
 %token TRUE FALSE ANDALSO ORELSE DIV MOD O
 %token LPAREN RPAREN LBRACK RBRACK LARRAY RARRAY
 %token LBRACE RBRACE COMMA SEMI DOT
 %token EQ EQEQ NE LT GT LE GE PLUS MINUS STAR SLASH AT CARET CONS
-%token BAR DARROW UNDERSCORE PIPE EOF
+%token BAR ARROW DARROW UNDERSCORE PIPE EOF
 
 %start <Ast.program> program
 %%
@@ -21,18 +49,27 @@ program:
   | ds=list(decl) EOF { ds }
 
 decl:
-  | VAL p=pattern EQ x=expr { d $startpos $endpos (DVal (p, x)) }
-  | VAL REC name=IDENT EQ body=recursive_fn
-      { d $startpos $endpos (DValRec (name, body)) }
+  | VAL p=pattern EQ rhs=initializer
+      { match rhs with
+        | `Plain x -> d $startpos $endpos (DVal (p, x))
+        | `Recursive x ->
+            (match p with
+             | PVar name -> d $startpos $endpos (DValRec (name, x))
+             | _ -> failwith "syntax error: rec requires a named val binding") }
   | DATATYPE name=IDENT EQ cs=separated_nonempty_list(BAR, constructor)
       { d $startpos $endpos (DDatatype (name, cs)) }
 
-(* Recursive bindings are restricted syntactically to lambdas.
-   The parenthesized form does not admit arbitrary expressions. *)
-recursive_fn:
-  | FN p=pattern DARROW body=expr
-      { e $startpos $endpos (EFn (p, body)) }
-  | LPAREN x=recursive_fn RPAREN { x }
+(* 'rec' is only legal on the right of a named 'val', never as an
+   independently usable expression. An arrow tail is mandatory. *)
+initializer:
+  | x=expr { `Plain x }
+  | REC head=pipe_expr tail=arrow_tail
+      { `Recursive (make_lambda $startpos $endpos head tail) }
+
+arrow_tail:
+  | DARROW body=expr { ([], body) }
+  | ARROW head=pipe_expr tail=arrow_tail
+      { let rest, body = tail in (head :: rest, body) }
 
 constructor:
   | name=UIDENT { (name, None) }
@@ -70,13 +107,14 @@ atomic_pattern:
 expr:
   | IF cond=expr THEN yes=expr ELSE no=expr
       { e $startpos $endpos (EIf (cond, yes, no)) }
-  | FN p=pattern DARROW body=expr
-      { e $startpos $endpos (EFn (p, body)) }
   | CASE x=expr OF bs=branches
       { e $startpos $endpos (ECase (x, bs)) }
   | DO ds=list(block_decl) x=expr END
       { e $startpos $endpos (EDo (ds, x)) }
-  | x=pipe_expr { x }
+  | head=pipe_expr tail=option(arrow_tail)
+      { match tail with
+        | None -> head
+        | Some tail -> make_lambda $startpos $endpos head tail }
 
 block_decl:
   | d=decl SEMI { d }
@@ -155,11 +193,12 @@ atom:
   | TRUE { e $startpos $endpos (EBool true) }
   | FALSE { e $startpos $endpos (EBool false) }
   | name=IDENT { e $startpos $endpos (EVar name) }
+  | UNDERSCORE { e $startpos $endpos (EVar "_") }
   | name=UIDENT { e $startpos $endpos (EVar name) }
-  | LPAREN RPAREN { e $startpos $endpos EUnit }
-  | LPAREN x=expr RPAREN { x }
+  | LPAREN RPAREN { e $startpos $endpos (EParen (e $startpos $endpos EUnit)) }
+  | LPAREN x=expr RPAREN { e $startpos $endpos (EParen x) }
   | LPAREN x=expr COMMA xs=separated_nonempty_list(COMMA, expr) RPAREN
-      { e $startpos $endpos (ETuple (x :: xs)) }
+      { e $startpos $endpos (EParen (e $startpos $endpos (ETuple (x :: xs)))) }
   | LBRACK xs=separated_list(COMMA, expr) RBRACK
       { e $startpos $endpos (EList xs) }
   | LARRAY xs=separated_list(COMMA, expr) RARRAY

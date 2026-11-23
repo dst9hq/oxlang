@@ -1,15 +1,15 @@
 #!/usr/bin/env ox
 
-val square = fn x => x * x
-val add = fn x => fn y => x + y
-val rec factorial = fn n =>
+val square = (x) => x * x
+val add = (x) -> (y) => x + y
+val factorial = rec (n) =>
   if n == 0 then 1 else n * factorial (n - 1)
-val rec fibonacci = (fn n =>
-  if n < 2 then n else fibonacci (n - 1) + fibonacci (n - 2))
+val fibonacci = rec (n) =>
+  if n < 2 then n else fibonacci (n - 1) + fibonacci (n - 2)
 
 val local_total =
   do
-    val rec sum = fn (n, acc) =>
+    val sum = rec (n, acc) =>
       if n == 0 then acc else sum (n - 1, acc + n);
     sum (5, 0)
   end

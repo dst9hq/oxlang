@@ -1,9 +1,9 @@
 #!/usr/bin/env ox
-val rec factorial = fn n =>
+val factorial = rec (n) =>
   if n == 0 then 1 else n * factorial (n - 1)
 val local =
   do
-    val rec sum = fn (n, acc) =>
+    val sum = rec (n, acc) =>
       if n == 0 then acc else sum (n - 1, acc + n);
     sum (4, 0)
   end

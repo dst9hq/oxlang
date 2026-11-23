@@ -1,5 +1,5 @@
 #!/usr/bin/env ox
-val update = fn state =>
+val update = (state) =>
   do
     val position = state.position + 1;
     val stops = state.stops + 2;

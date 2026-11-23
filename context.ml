@@ -29,7 +29,7 @@ let rec dependencies_expr expr =
       | _ -> [] in
     self @ (match expr.node with
     | EApp (f, x) | EPipe (f, x) | EBin (_, f, x) -> go f @ go x
-    | EField (x, _) | ENeg x -> go x
+    | EField (x, _) | ENeg x | EParen x -> go x
     | EList xs | EArray xs | ETuple xs -> List.concat_map go xs
     | ERecord xs -> List.concat_map (fun (_, x) -> go x) xs
     | EIf (a, b, c) -> go a @ go b @ go c
@@ -42,9 +42,13 @@ and dependencies_decl decl = match decl.node with
   | DVal (_, x) | DValRec (_, x) -> dependencies_expr x
   | DDatatype _ -> []
 
+let rec unparen expr = match expr.node with
+  | EParen x -> unparen x
+  | _ -> expr
+
 let describe_decl decl =
   let kind, names = match decl.node with
-    | DVal (PVar name, { node = EFn _; _ }) -> "function", [name]
+    | DVal (PVar name, x) when (match (unparen x).node with EFn _ -> true | _ -> false) -> "function", [name]
     | DVal (p, _) -> "value", names_pattern p
     | DValRec (name, _) -> "function", [name]
     | DDatatype (name, _) -> "datatype", [name] in

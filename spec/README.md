@@ -2,7 +2,7 @@
 
 Normative working language specification by E. Alvarez and GPT-6.
 
-- `definition-of-ox.tex`: editable LaTeX source (working definition 0.1.1).
+- `definition-of-ox.tex`: editable LaTeX source (working definition 0.1.2).
 - `definition-of-ox.pdf`: compiled reading copy.
 
 Build with XeLaTeX and MakeIndex:

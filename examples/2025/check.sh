@@ -27,7 +27,7 @@ part 2: 6'
 check day02 'part 1: 1227775554
 part 2: 4174379265'
 
-# `val rec` works at top level, in a local block, and under parentheses.
+# `rec` works at the function site, including local recursive closures.
 recursion_expected='120
 13
 15
@@ -39,7 +39,7 @@ if [ "$recursion_got" != "$recursion_expected" ]; then
 fi
 printf 'PASS recursion\n%s\n' "$recursion_got"
 
-# The old `fun` declaration and non-lambda recursive RHS must not parse.
+# The old function keywords and invalid recursive RHS must not parse.
 check_bad_syntax() {
   name="$1"
   code="$2"
@@ -54,4 +54,6 @@ check_bad_syntax() {
   printf 'PASS %s: syntax rejected\n' "$name"
 }
 check_bad_syntax old_fun 'fun f x = x'
-check_bad_syntax bad_rec 'val rec x = x + 1'
+check_bad_syntax old_fn 'val x = fn n => n'
+check_bad_syntax old_val_rec 'val rec x = (n) => n'
+check_bad_syntax bad_rec 'val x = rec x + 1'

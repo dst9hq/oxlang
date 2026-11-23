@@ -35,6 +35,7 @@ and expr_desc =
   | EBin of string * expr * expr
   | EIf of expr * expr * expr
   | EFn of pattern * expr
+  | EParen of expr
   | ECase of expr * (pattern * expr) list
   | EDo of decl list * expr
 and decl = decl_desc located

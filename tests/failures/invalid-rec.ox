@@ -1,1 +1,1 @@
-val rec x = x + 1
+val x = rec x + 1

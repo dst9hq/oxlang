@@ -74,6 +74,7 @@ check_syntax composition
 check_syntax blocks
 check_syntax equality
 check_syntax tuple-transformations
+check_syntax arrow-functions
 
 check_output bindings
 check_output records
@@ -87,8 +88,14 @@ check_output files fixtures/numbers.txt
 check_output process
 check_output equality
 check_output tuple-transformations
+check_output arrow-functions
 
 check_failure check old-fun 'syntax error'
+check_failure check old-fn 'syntax error'
+check_failure check old-val-rec 'syntax error'
+check_failure check unparenthesized-arrow 'syntax error'
+check_failure check invalid-parameter 'syntax error'
+check_failure check rec-tuple-binding 'syntax error'
 check_failure check invalid-rec 'syntax error'
 check_failure check missing-semicolon 'syntax error'
 check_failure check invalid-record 'syntax error'

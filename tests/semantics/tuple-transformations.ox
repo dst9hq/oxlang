@@ -1,5 +1,5 @@
 #!/usr/bin/env ox
-val rec equal_blocks = fn (text, width, offset) =>
+val equal_blocks = rec (text, width, offset) =>
   if offset == S.length text then true
   else
     do
@@ -12,7 +12,7 @@ val rec equal_blocks = fn (text, width, offset) =>
       else false
     end
 
-val repeated = fn (text, width) =>
+val repeated = (text, width) =>
   if width <= 0 then false
   else
     do
@@ -24,7 +24,7 @@ val repeated = fn (text, width) =>
       else false
     end
 
-val rec count_invalid = fn (current, upper, total) =>
+val count_invalid = rec (current, upper, total) =>
   if current > upper then total
   else
     do

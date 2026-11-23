@@ -29,7 +29,7 @@
 \definecolor{codec}{HTML}{124F51}
 \hypersetup{colorlinks=true,linkcolor=ink,urlcolor=codec,pdfauthor={E. Alvarez and GPT-6},pdftitle={The Definition of ox},pdfsubject={Working formal specification of the ox data-oriented scripting language}}
 \lstdefinelanguage{oxlang}{
-  morekeywords={val,rec,fn,datatype,of,case,if,then,else,do,end,true,false,andalso,orelse,div,mod,o},
+  morekeywords={val,rec,datatype,of,case,if,then,else,do,end,true,false,andalso,orelse,div,mod,o},
   sensitive=true,
   morecomment=[l]{\#},
   morecomment=[s]{(*}{*)},
@@ -45,7 +45,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\footnotesize\sffamily THE DEFINITION OF ox}
-\fancyhead[R]{\footnotesize\sffamily WORKING DRAFT 0.1.1}
+\fancyhead[R]{\footnotesize\sffamily WORKING DRAFT 0.1.2}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{.35pt}
 \renewcommand{\chaptermark}[1]{}
@@ -73,7 +73,7 @@
 {\Large An ML-derived, data-oriented scripting language}\\[.7in]
 \begin{tikzpicture}
 \draw[ink,line width=0.6pt] (-2.05,0)--(2.05,0);
-\node[font=\footnotesize\sffamily] at (0,-.33) {WORKING DEFINITION \quad VERSION 0.1.1};
+\node[font=\footnotesize\sffamily] at (0,-.33) {WORKING DEFINITION \quad VERSION 0.1.2};
 \end{tikzpicture}\\[.9in]
 {\Large E. Alvarez \quad and \quad GPT-6}\\[.2in]
 {\normalsize Joint language design and formal specification}\\
@@ -89,7 +89,7 @@ A precise definition is useful not because a small language must be complicated,
 
 This book follows the \emph{organization}, not the prose, of Milner, Tofte, and Harper's \emph{The Definition of Standard ML} (1989). The original separates the syntax, static semantics, and dynamic semantics of a Core language, treats modules independently, defines programs, and provides derived forms, a full grammar, and initial bases in appendices. We adopt that architecture on a smaller scale. The supplied Standard ML Definition is our principal reference for the methodological choice. \cite{milner1989}
 
-\paragraph{Status and authority.} This is a \emph{working definition}, not a report that every rule is already implemented. Sections explicitly distinguish \textbf{normative proposals} from \textbf{implementation status} and \textbf{open design obligations}. A rule in this document states intended \ox{} behavior; it does not silently certify the current interpreter. When the proposed definition differs from the current seven-file interpreter (through Patch 009), the difference is noted in Appendix E.
+\paragraph{Status and authority.} This is a \emph{working definition}, not a report that every rule is already implemented. Sections explicitly distinguish \textbf{normative proposals} from \textbf{implementation status} and \textbf{open design obligations}. A rule in this document states intended \ox{} behavior; it does not silently certify the current interpreter. When the proposed definition differs from the current seven-file interpreter (through Patch 010), the difference is noted in Appendix E.
 
 \paragraph{A compact thesis.} Data is represented before it is manipulated. Functions are values which transform data. Imperative effects---file reads, process execution, mutable arrays, and tables---remain available and explicit. Object-oriented method dispatch, classes, and inheritance are absent. The ability to execute a script with \texttt{\#!/usr/bin/env ox} is a language-level requirement.
 
@@ -123,12 +123,12 @@ The definition is divided into Core, Modules, and Programs. \emph{Core} contains
 
 datatype turn = Left of int | Right of int
 
-val movement = fn turn =>
+val movement = (turn) =>
   case turn of
       Left clicks => -clicks
     | Right clicks => clicks
 
-val advance = fn (state, turn) =>
+val advance = (state, turn) =>
   do
     val moved = state.position + movement turn;
     val position = (moved mod 100 + 100) mod 100;
@@ -153,12 +153,12 @@ means that evaluating $e$ in environment $\env$ and state $\state$ terminates wi
 The following words are reserved in the proposed Core:
 \begin{center}
 \begin{tabular}{lllllll}
-\kw{val}&\kw{rec}&\kw{fn}&\kw{datatype}&\kw{of}&\kw{case}&\kw{if}\\
-\kw{then}&\kw{else}&\kw{do}&\kw{end}&\kw{true}&\kw{false}&\kw{andalso}\\
-\kw{orelse}&\kw{div}&\kw{mod}&\kw{o}&&&
+\kw{val}&\kw{rec}&\kw{datatype}&\kw{of}&\kw{case}&\kw{if}&\kw{then}\\
+\kw{else}&\kw{do}&\kw{end}&\kw{true}&\kw{false}&\kw{andalso}&\kw{orelse}\\
+\kw{div}&\kw{mod}&\kw{o}&&&&
 \end{tabular}
 \end{center}
-The tokens \kw{fun}, \kw{let}, \kw{in}, \kw{switch}, and \kw{breaksw} have no grammatical function. We retain \kw{val rec} for recursively defined functions; it is not a separate kind of callable object. A bare \kw{fun} declaration is not part of the language; Patch 006 replaced it with \kw{val} and \kw{val rec}.
+The tokens \kw{fun}, \kw{fn}, \kw{let}, \kw{in}, \kw{switch}, and \kw{breaksw} have no grammatical function. In Patch 010, recursion moved from the former \kw{val rec} declaration syntax to an optional \kw{rec} modifier placed at the function site: \kw{val f = rec (x) => e}.
 
 \section{Special constants}
 The initial constants are decimal integers, decimal floating-point literals, double-quoted strings, booleans, and the unit expression \kw{()}. The range of an integer is the host runtime's native tagged integer range unless a future specification defines arbitrary precision. A floating literal has the implementation's supported binary floating representation. Strings are byte sequences; their encoding is not inferred from syntax.
@@ -172,7 +172,7 @@ A leading \kw{\#!} line is treated as a script interpreter directive and ignored
 Ordinary value identifiers begin with a lowercase letter or underscore. Constructor and module identifiers begin with an uppercase letter. Subsequent characters may be letters, digits, or underscores. \kw{L.map} is a qualified prelude lookup; \kw{state.position} is a record-field projection. Neither denotes an object-method call.
 
 \section{Lexical analysis}
-Whitespace separates tokens except within strings. Comments are discarded while source positions are retained. Multi-character operators (including \kw{|>}, \kw{==}, \kw{/=}, \kw{::}, \kw{=>}, \kw{<=}, and \kw{>=}) take precedence over their constituent characters. A newline is not a statement terminator. Consecutive declarations in \kw{do} blocks are separated by semicolons. A single \kw{=} is reserved for bindings, declarations, and labeled record fields, never comparisons.
+Whitespace separates tokens except within strings. Comments are discarded while source positions are retained. Multi-character operators (including \kw{|>}, \kw{==}, \kw{/=}, \kw{::}, \kw{->}, \kw{=>}, \kw{<=}, and \kw{>=}) take precedence over their constituent characters. A newline is not a statement terminator. Consecutive declarations in \kw{do} blocks are separated by semicolons. A single \kw{=} is reserved for bindings, declarations, and labeled record fields, never comparisons.
 
 \section{Infix operators}
 \begin{center}
@@ -199,20 +199,33 @@ The proposed grammar will prohibit chained comparisons without parentheses. The 
 The operator \kw{|>} is left associative and evaluates its left operand before its right operand. Composition \kw{o} constructs a function and does not execute either component until the composition is applied.
 
 \section{Function parameters and local transformations}
-A function always receives one argument. That argument may itself be a tuple, so
-\kw{val f = fn (a, b) => e} binds a function of one product-valued argument;
-\kw{f (x, y)} passes a tuple. Nested functions such as
-\kw{val f = fn a => fn b => e} are also valid and permit partial application.
-This is a distinction in semantics, not merely typography. In the initial
-prelude, many functions remain curried by design.
+Every function receives one value. Parameter patterns are parenthesized in the
+surface language: \kw{(x) => e} denotes a unary function and
+\kw{(x, y) => e} takes one tuple value. The form
+\kw{(x) -> (y) => e} is \emph{curried}: its first application yields a second
+function. Its meaning is two nested unary functions, not one function with
+multiple positional arguments. Longer chains associate to the right.
 
-\paragraph{Programming convention.} For domain-specific transformations with
-interdependent inputs, prefer a tuple. For computations with several stages,
-introduce intermediate \kw{val} bindings within \kw{do ... end} before
-constructing a result or performing recursion. This convention does not add a
-new reserved word or evaluation rule. For example:
+\paragraph{Two distinct arrows.} The token \kw{->} separates parameter levels
+in a function expression; the final token \kw{=>} introduces the function body.
+The same \kw{=>} still separates a \kw{case} branch pattern from its expression.
+In future type annotations \kw{->} may also denote the function-type
+constructor; expression and type grammar contexts distinguish these uses.
+The absence of \kw{fn} removes no expressive power, but parentheses on
+individual parameter levels are mandatory.
+
+\paragraph{Recursive function expressions.} The syntax
+\kw{val name = rec (p) => e} assigns a recursive function to \kw{name}.
+Curried recursion may use \kw{val name = rec (p) -> (q) => e}. The \kw{rec}
+modifier is permitted only immediately after \kw{=} in a \emph{named} value
+declaration. It is not a freely usable anonymous recursive expression.
+
+\paragraph{Programming convention.} Prefer one tuple argument for a domain
+transformation whose inputs form one conceptual product; prefer currying when
+partial application is intended. Compute named intermediate values in a
+\kw{do ... end} block before constructing the result or advancing recursion.
 \begin{lstlisting}
-val rec count_invalid = fn (rule, current, upper, total) =>
+val count_invalid = rec (rule, current, upper, total) =>
   if current > upper then total
   else
     do
@@ -223,20 +236,20 @@ val rec count_invalid = fn (rule, current, upper, total) =>
       count_invalid (rule, current + 1, upper, next_total)
     end
 \end{lstlisting}
-The final expression is the block result; the semicolon belongs to each local
-declaration, not to the recursive call.
+The final expression is the block result; semicolons terminate local
+declarations rather than recursive calls.
 
 \section{Derived forms}
-We distinguish the surface language from a smaller kernel. Record punning, forward application, composition, list displays, and \kw{if} are derived forms. \kw{val rec} is \emph{not} rewritten to ordinary \kw{val}, because the declaration requires recursive lexical scope. Precise translations appear in Appendix A.
+We distinguish the surface language from a smaller kernel. Record punning, forward application, composition, list displays, and \kw{if} are derived forms. \kw{val f = rec (p) => e} is a special initializer form, not an ordinary lambda value, because the declaration requires recursive lexical scope. Precise translations appear in Appendix A.
 
 \section{Grammar}
-Core declarations are values, recursive values, and datatype bindings. The core expressions are constants, variables, applications, records, collections, functions, cases, conditionals, and local \kw{do} blocks. Appendix B gives the full proposed surface grammar in EBNF-like notation. The grammar is normative at the level of accepted phrases, not at the level of a particular Menhir conflict-resolution strategy.
+Core declarations are value and datatype bindings; a named value declaration may have a recursive function initializer. The core expressions are constants, variables, applications, records, collections, functions, cases, conditionals, and local \kw{do} blocks. Appendix B gives the full proposed surface grammar in EBNF-like notation. The grammar is normative at the level of accepted phrases, not at the level of a particular Menhir conflict-resolution strategy.
 
 \section{Syntactic restrictions}
 \begin{enumerate}
 \item The same record label may not occur twice in a record expression or record pattern.
 \item A pattern may not bind the same variable twice.
-\item A \kw{val rec} binding must name a single identifier and its right-hand side must be a \kw{fn} expression (optionally parenthesized). This prevents arbitrary recursive cyclic data.
+\item A \kw{rec} initializer is only permitted directly after the equals sign in a named \kw{val} binding and must be an arrow function; it cannot initialize an arbitrary pattern binding. This prevents arbitrary recursive cyclic data.
 \item A \kw{case} expression must contain at least one branch; patterns are tested in source order.
 \item Every declaration in a \kw{do} block ends in \kw{;} and the block ends in one result expression followed by \kw{end}.
 \item User code does not redefine reserved words. Duplicate constructor names in the same datatype declaration are rejected.
@@ -297,7 +310,7 @@ The proposed type notation for lists, products, and datatype payloads follows ML
 \pending Full Hindley--Milner generalization, principal types, and the Standard ML value restriction are not requirements of \ox{} 0.1. We reserve the notation $\forall\alpha.\tau$ for a possible later static checker but make no principal-typing claim in this edition.
 
 \section{Scope of identifiers}
-A declaration extends only the subsequent lexical environment in its containing scope. In \kw{do val x = e; body end}, the new $x$ is visible in $body$ but not outside the block. Ordinary \kw{val x = e} evaluates $e$ in the old environment. Recursive \kw{val rec f = fn ...} has $f$ in scope while the closure is formed.
+A declaration extends only the subsequent lexical environment in its containing scope. In \kw{do val x = e; body end}, the new $x$ is visible in $body$ but not outside the block. Ordinary \kw{val x = e} evaluates $e$ in the old environment. In \kw{val f = rec (p) => e}, $f$ is in scope while its closure is formed.
 
 \section{Non-expansive expressions}
 A literal, lambda, or data constructor may be side-effect-free in isolation. By contrast, \kw{U.read}, \kw{Process.run}, and mutable table operations are effects. This classification informs future effect diagnostics but is not a purity type system: \kw{val} does not promise that its initializer is pure.
@@ -313,7 +326,7 @@ For a future sound static subset, we use $\Gamma\vdash e:\tau$ as a typing judgm
 \begin{mathpar}
 \inferrule*[right=Variable]{\Gamma(x)=\tau}{\Gamma\vdash x:\tau}
 \and
-\inferrule*[right=Function]{\Gamma,x:\tau_1\vdash e:\tau_2}{\Gamma\vdash (\mathtt{fn}\ x\Rightarrow e):\tau_1\to\tau_2}
+\inferrule*[right=Function]{\Gamma,x:\tau_1\vdash e:\tau_2}{\Gamma\vdash ((x)\Rightarrow e):\tau_1\to\tau_2}
 \and
 \inferrule*[right=Application]{\Gamma\vdash f:\tau_1\to\tau_2\\\Gamma\vdash a:\tau_1}{\Gamma\vdash f\ a:\tau_2}
 \end{mathpar}
@@ -322,7 +335,7 @@ For a future sound static subset, we use $\Gamma\vdash e:\tau$ as a typing judgm
 \and
 \inferrule*[right=Pipe]{\Gamma\vdash e:\tau_1\\\Gamma\vdash f:\tau_1\to\tau_2}{\Gamma\vdash e\mid\!> f:\tau_2}
 \end{mathpar}
-These are \emph{intended rules}, not a claim that the Patch 009 prototype implements a typechecker. The current interpreter performs runtime operand checks and pattern dispatch.
+These are \emph{intended rules}, not a claim that the Patch 010 prototype implements a typechecker. The current interpreter performs runtime operand checks and pattern dispatch.
 
 \section{Additional restrictions}
 The checker should detect duplicate record labels, unbound identifiers, illegal recursive initializers, and malformed constructor payloads. Exhaustiveness and redundancy checking are supported where the datatype and pattern grammar make them decidable without whole-program analysis.
@@ -370,7 +383,7 @@ Numbers and strings are values; functions are first-class values. A \kw{val} bin
 Successful evaluation is partial. Runtime errors include unbound names, wrong operand categories, integer division by zero, invalid array indices, missing record fields, invalid process arguments, failure of a \kw{val} pattern, and nonexhaustive \kw{case}. The CLI must report a source position for failures associated with a source expression.
 
 \section{Closures}
-Evaluating \kw{fn p => e} creates a closure carrying $p$, $e$, and the current lexical environment; it does not evaluate $e$. Applying the closure attempts to match the argument against $p$, extends the captured environment on success, and evaluates the body. Failure to match is a runtime error.
+Evaluating \kw{(p) => e} creates a closure carrying $p$, $e$, and the current lexical environment; it does not evaluate $e$. Applying the closure attempts to match the argument against $p$, extends the captured environment on success, and evaluates the body. Failure to match is a runtime error.
 
 \section{Evaluation rules}
 Representative rules follow. We suppress unchanged store components where this does not affect the point at issue.
@@ -379,7 +392,7 @@ Representative rules follow. We suppress unchanged store components where this d
 \and
 \inferrule*[right=Variable]{\env(x)=v}{\langle\env,\state,x\rangle\Downarrow\langle\state,v\rangle}
 \and
-\inferrule*[right=Lambda]{ }{\langle\env,\state,\mathtt{fn}\ p\Rightarrow e\rangle\Downarrow\langle\state,\langle p,e,\env\rangle\rangle}
+\inferrule*[right=Lambda]{ }{\langle\env,\state,(p)\Rightarrow e\rangle\Downarrow\langle\state,\langle p,e,\env\rangle\rangle}
 \end{mathpar}
 \begin{mathpar}
 \inferrule*[right=Application]{\langle\env,\state,f\rangle\Downarrow\langle\state_1,\langle p,e,\env_c\rangle\rangle\\
@@ -397,7 +410,7 @@ For \kw{case}, the scrutinee is evaluated once. The first matching branch is sel
 \end{mathpar}
 An ordinary \kw{val} initializer is evaluated in the environment \emph{before} its new bindings are introduced. If the pattern matches, those bindings extend the environment for following declarations. The declarations of a \kw{do} block are processed in order, and its last expression is its value.
 
-\paragraph{Recursive bindings.} A \kw{val rec f = fn p => e} declaration creates a self-referential closure environment, then binds \kw{f} to the resulting closure. It does not evaluate the function body during binding. Thus recursion is well-defined without permitting arbitrary cyclic values.
+\paragraph{Recursive bindings.} A \kw{val f = rec (p) => e} declaration creates a self-referential closure environment, then binds \kw{f} to the resulting closure. It does not evaluate the function body during binding. Thus recursion is well-defined without permitting arbitrary cyclic values.
 
 \paragraph{Records.} Fields are evaluated left to right, then assembled by label. Punned \kw{position} is translated to \kw{position = position} before evaluation. A record is a new value; construction does not mutate its source bindings.
 
@@ -461,10 +474,11 @@ Derived forms are defined by source-to-source or source-to-core rewrites. Fresh 
 Surface form & Core meaning \\
 \midrule
 \endhead
-\kw{val f = fn x => e} & Ordinary value declaration binding a function value; no \kw{fun} construct is needed.\\[5pt]
-\kw{val rec f = fn x => e} & Recursive lexical binding. Special declaration semantics; not ordinary \kw{val}.\\[5pt]
+\kw{val f = (x) => e} & Ordinary value declaration binding an anonymous function; \kw{fn} is absent.\\[5pt]
+\kw{val f = rec (x) => e} & Recursive lexical binding: \kw{rec} modifies the function site.\\[5pt]
+\kw{(x) -> (y) => e} & Curried syntax for \kw{(x) => ((y) => e)}. Each level creates one closure.\\[5pt]
 \kw{x |> f} & Evaluate $x$, then $f$, then apply $f$ to $x$.\\[5pt]
-\kw{f o g} & Construct \kw{fn x => f (g x)}, with a fresh \kw{x}; component calls occur on application.\\[5pt]
+\kw{f o g} & Construct \kw{(x) => f (g x)}, with a fresh \kw{x}; component calls occur on application.\\[5pt]
 \kw{\{x, y\}} & \kw{\{x = x, y = y\}}.\\[5pt]
 \kw{[a, b, c]} & \kw{a :: b :: c :: []}.\\[5pt]
 \kw{if b then e1 else e2} & \kw{case b of true => e1 | false => e2}.\\[5pt]
@@ -480,20 +494,22 @@ The grammar below is compact EBNF-like notation. \kw{\{...\}} in quotation marks
 
 \begin{lstlisting}[language={}]
 program        ::= declaration*
-declaration    ::= "val" pattern "=" expr
-                 | "val" "rec" IDENT "=" fnexpr
+declaration    ::= "val" pattern "=" initializer
                  | "datatype" IDENT "=" constructors
+initializer    ::= expr | "rec" arrowfn
 constructors   ::= constructor ("|" constructor)*
 constructor    ::= CONID ("of" typespec)?
 typespec       ::= typeatom ("*" typeatom)*
 typeatom       ::= IDENT | "(" typespec ")"
 
 expr           ::= "if" expr "then" expr "else" expr
-                 | fnexpr
+                 | arrowfn
                  | "case" expr "of" branches
                  | "do" (declaration ";")* expr "end"
                  | infixexpr
-fnexpr         ::= "fn" pattern "=>" expr
+arrowfn        ::= parameter ("->" parameter)* "=>" expr
+parameter      ::= "(" pattern ")" | "(" pattern ("," pattern)+ ")"
+                 | "()"
 branches       ::= "|"? branch ("|" branch)*
 branch         ::= pattern "=>" expr
 
@@ -522,7 +538,7 @@ atomicpattern  ::= IDENT | CONID | literal
                  | "(" pattern ")" | "[" ... "]"
 \end{lstlisting}
 
-Operator precedence and associativity follow Section 2.6, which is part of the grammar definition. Parsing a \kw{val rec} declaration requires the \kw{rec} token and a lambda-form initializer. A complete grammar file suitable for Menhir should encode these precedence layers explicitly rather than relying on ambiguous operator productions.
+Operator precedence and associativity follow Section 2.6, which is part of the grammar definition. An initializer beginning with \kw{rec} is accepted only for a named \kw{val} and must contain a complete arrow function. Each parameter level must be parenthesized. A complete grammar file suitable for Menhir should encode these precedence layers explicitly rather than relying on ambiguous operator productions.
 
 \chapter{The Initial Static Basis}
 \label{app:static}
@@ -604,18 +620,19 @@ Patch & Established behavior \\
 007 & Introduce a standalone \kw{tests/} conformance suite.\\
 008 & Use \kw{==} for equality; retain \kw{/=} for inequality.\\
 009 & Adopt tuple-argument, named-intermediate style; test recursion.\\
+010 & Remove \kw{fn} and \kw{val rec}; use arrow functions and function-site \kw{rec}.\\
 \bottomrule
 \end{tabularx}
 \end{center}
-\impl Patch 009 uses \kw{val rec}, \kw{==}, and a separate conformance suite. The language implementation remains an uncompiled prototype in the preparation environment; \kw{ox check} currently parses but does not typecheck. Nominal constructor identity, stronger static diagnostics, and selected evaluation-order guarantees still require review or implementation.
+\impl Patch 010 uses arrow functions, function-site \kw{rec}, \kw{==}, and a separate conformance suite. The language implementation remains an uncompiled prototype in the preparation environment; \kw{ox check} currently parses but does not typecheck. Nominal constructor identity, stronger static diagnostics, and selected evaluation-order guarantees still require review or implementation.
 
 \section{Open obligations}
-Before calling this document a stable release, the project must: (i) compile under the target OxCaml toolchain; (ii) validate the new \kw{val rec} evaluator and \kw{==} parser against tests; (iii) reconcile its record, constructor, and module runtime behavior with this definition; (iv) test evaluation order and error reporting; (v) provide exhaustive AoC sample regression tests; and (vi) document any implementation-dependent integer and filesystem behavior. The proposed context cache must remain a product of static analysis, not a source of fabricated runtime facts.
+Before calling this document a stable release, the project must: (i) compile under the target OxCaml toolchain; (ii) validate the new function-site \kw{rec} evaluator and \kw{==} parser against tests; (iii) reconcile its record, constructor, and module runtime behavior with this definition; (iv) test evaluation order and error reporting; (v) provide exhaustive AoC sample regression tests; and (vi) document any implementation-dependent integer and filesystem behavior. The proposed context cache must remain a product of static analysis, not a source of fabricated runtime facts.
 
 \backmatter
 \begin{thebibliography}{9}
 \bibitem{milner1989} Robin Milner, Mads Tofte, and Robert Harper. \emph{The Definition of Standard ML}. University of Edinburgh, Laboratory for Foundations of Computer Science, 1989. User-supplied reference PDF, 129 pages.
-\bibitem{oxsource} E. Alvarez and GPT-6. \emph{ox Advent Edition, working prototype through Patch 009}. Seven-file source tree and examples, November 2026. Unverified prototype, used here for implementation-status notes.
+\bibitem{oxsource} E. Alvarez and GPT-6. \emph{ox Advent Edition, working prototype through Patch 010}. Seven-file source tree and examples, November 2026. Unverified prototype, used here for implementation-status notes.
 \end{thebibliography}
 \addcontentsline{toc}{chapter}{Bibliography}
 \index{array!zero-based indexing}

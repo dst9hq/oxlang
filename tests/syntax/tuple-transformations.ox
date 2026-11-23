@@ -1,5 +1,5 @@
 #!/usr/bin/env ox
-val rec step = fn (current, upper, total) =>
+val step = rec (current, upper, total) =>
   if current > upper then total
   else
     do

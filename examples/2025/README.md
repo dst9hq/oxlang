@@ -46,8 +46,8 @@ Puzzle descriptions:
 - https://adventofcode.com/2025/day/1
 - https://adventofcode.com/2025/day/2
 
-Patch 006 expresses all functions with `val name = fn ... => ...` and
-recursion with `val rec name = fn ... => ...`. The puzzle data models
+Patch 010 expresses functions with `val name = (x) => ...` and
+recursion with `val name = rec (x) => ...`. The puzzle data models
 (`datatype` and records) remain separate from their transformations.
 
 Patch 009 converts Day 2 domain-specific functions from nested currying to
@@ -55,3 +55,6 @@ tuple arguments (e.g. `repeated (text, width)`), while preserving curried
 prelude functions where partial application helps. Recursion builds named
 intermediate values in `do ... end` before calling itself. The language
 syntax is unchanged; the intended outputs remain the same.
+
+Patch 010 adds arrow-parameter spelling `(x) -> (y) => body` for curried
+functions, removes `fn`, and moves recursion to the function site.

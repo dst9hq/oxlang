@@ -1,6 +1,6 @@
 #!/usr/bin/env ox
 datatype outcome = Ok of int | Error of string
-val describe = fn result =>
+val describe = (result) =>
   case result of
       Ok n => P.sprintf "ok %d" n
     | Error message => message
