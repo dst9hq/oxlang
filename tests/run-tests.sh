@@ -73,6 +73,7 @@ check_syntax datatypes
 check_syntax composition
 check_syntax blocks
 check_syntax equality
+check_syntax tuple-transformations
 
 check_output bindings
 check_output records
@@ -85,6 +86,7 @@ check_output mutation
 check_output files fixtures/numbers.txt
 check_output process
 check_output equality
+check_output tuple-transformations
 
 check_failure check old-fun 'syntax error'
 check_failure check invalid-rec 'syntax error'

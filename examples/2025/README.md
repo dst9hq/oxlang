@@ -49,3 +49,9 @@ Puzzle descriptions:
 Patch 006 expresses all functions with `val name = fn ... => ...` and
 recursion with `val rec name = fn ... => ...`. The puzzle data models
 (`datatype` and records) remain separate from their transformations.
+
+Patch 009 converts Day 2 domain-specific functions from nested currying to
+tuple arguments (e.g. `repeated (text, width)`), while preserving curried
+prelude functions where partial application helps. Recursion builds named
+intermediate values in `do ... end` before calling itself. The language
+syntax is unchanged; the intended outputs remain the same.

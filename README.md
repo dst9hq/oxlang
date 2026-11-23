@@ -197,3 +197,32 @@ in `tests/`; `examples/` remains for human-readable Advent of Code solutions.
 Equality is `==`, inequality is `/=`. Single `=` remains the declaration/field
 separator, for example `val x = 3`, `datatype color = Red | Blue`, and
 `{x = 3}`. `if x = 3 then ...` is no longer legal; use `if x == 3 then ...`.
+
+## Patch 009: data-first transformations and tuple arguments
+
+Use a single tuple parameter when several values jointly define one operation:
+`val repeated = fn (text, width) => ...`. Use nested `fn` when partial
+application is useful (`val add = fn x => fn y => x + y`); prelude functions
+remain curried. These are style conventions, not new grammar rules.
+
+For nontrivial transformations, compute named intermediate values in
+`do ... end`, terminate each declaration with `;`, and leave the final
+expression without a semicolon. Especially in recursive functions, calculate
+the next state before the recursive call:
+
+```sml
+val rec count = fn (current, upper, total) =>
+  if current > upper then total
+  else
+    do
+      val contribution = if current mod 2 == 0 then current else 0;
+      val next_total = total + contribution;
+
+      count (current + 1, upper, next_total)
+    end
+```
+
+The Day 2 example follows this pattern throughout. The project now includes
+`spec/definition-of-ox.tex` and its compiled PDF as the versioned language
+definition, updated through Patch 009. The seven-file implementation limit
+continues to exclude tests, examples, and the specification.

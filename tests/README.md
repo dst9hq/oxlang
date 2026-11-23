@@ -31,3 +31,8 @@ This is a proposed conformance suite, not an assertion that tests were run
 under OxCaml. It requires building the interpreter first.
 
 Patch 008: `==` is the comparison operator; `=` is reserved for bindings and fields. `equality.ox` verifies both comparison operators and record equality, while `old-equality.ox` ensures `if 1 = 1` is rejected.
+
+Patch 009 adds `tuple-transformations.ox` for one-tuple function parameters,
+short-circuit validation, `==`, `do` declaration sequencing, named
+intermediates, and recursive accumulation. The test is independent of AoC
+fixture parsing.
