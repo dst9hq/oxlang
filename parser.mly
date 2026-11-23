@@ -7,7 +7,7 @@ let d a b node = located a b node
 %token <int> INT
 %token <float> FLOAT
 %token <string> STRING IDENT UIDENT
-%token VAL FUN FN DATATYPE OF CASE IF THEN ELSE DO END
+%token VAL REC FN DATATYPE OF CASE IF THEN ELSE DO END
 %token TRUE FALSE ANDALSO ORELSE DIV MOD O
 %token LPAREN RPAREN LBRACK RBRACK LARRAY RARRAY
 %token LBRACE RBRACE COMMA SEMI DOT
@@ -22,10 +22,17 @@ program:
 
 decl:
   | VAL p=pattern EQ x=expr { d $startpos $endpos (DVal (p, x)) }
-  | FUN name=IDENT args=nonempty_list(simple_pattern) EQ body=expr
-      { d $startpos $endpos (DFun (name, args, body)) }
+  | VAL REC name=IDENT EQ body=recursive_fn
+      { d $startpos $endpos (DValRec (name, body)) }
   | DATATYPE name=IDENT EQ cs=separated_nonempty_list(BAR, constructor)
       { d $startpos $endpos (DDatatype (name, cs)) }
+
+(* Recursive bindings are restricted syntactically to lambdas.
+   The parenthesized form does not admit arbitrary expressions. *)
+recursive_fn:
+  | FN p=pattern DARROW body=expr
+      { e $startpos $endpos (EFn (p, body)) }
+  | LPAREN x=recursive_fn RPAREN { x }
 
 constructor:
   | name=UIDENT { (name, None) }

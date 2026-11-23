@@ -3,29 +3,29 @@
 datatype range = Between of int * int
 datatype rule = Twice | AnyRepeat
 
-fun parse_range text =
+val parse_range = fn text =>
   do
     val bounds = S.split "-" text;
     Between (I.parse (L.nth bounds 0), I.parse (L.nth bounds 1))
   end
 
-fun equal_blocks text width offset =
+val rec equal_blocks = fn text => fn width => fn offset =>
   if offset = S.length text then true
   else if S.sub text offset width = S.sub text 0 width then
     equal_blocks text width (offset + width)
   else false
 
-fun repeated text width =
+val repeated = fn text => fn width =>
   if width * 2 > S.length text then false
   else if S.length text mod width /= 0 then false
   else equal_blocks text width width
 
-fun any_width text width =
+val rec any_width = fn text => fn width =>
   if width * 2 > S.length text then false
   else if repeated text width then true
   else any_width text (width + 1)
 
-fun invalid (rule, id) =
+val invalid = fn (rule, id) =>
   do
     val text = I.to_string id;
     case rule of
@@ -36,17 +36,17 @@ fun invalid (rule, id) =
       | AnyRepeat => any_width text 1
   end
 
-fun count_invalid (rule, current, upper, total) =
+val rec count_invalid = fn (rule, current, upper, total) =>
   if current > upper then total
   else count_invalid
     (rule, current + 1, upper,
      total + (if invalid (rule, current) then current else 0))
 
-fun score_range rule interval =
+val score_range = fn rule => fn interval =>
   case interval of
       Between (lower, upper) => count_invalid (rule, lower, upper, 0)
 
-fun score rule ranges =
+val score = fn rule => fn ranges =>
   L.foldl (fn (interval, total) => total + score_range rule interval) 0 ranges
 
 val input = U.read (L.hd argv)

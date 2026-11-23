@@ -40,7 +40,7 @@ and expr_desc =
 and decl = decl_desc located
 and decl_desc =
   | DVal of pattern * expr
-  | DFun of string * pattern list * expr
+  | DValRec of string * expr
   | DDatatype of string * (string * string option) list
 
 type program = decl list

@@ -21,7 +21,7 @@ rule token = parse
   | digit+ as s { INT (int_of_string s) }
   | '"' { Buffer.clear string_buf; quoted lexbuf }
   | "val" { VAL }
-  | "fun" { FUN }
+  | "rec" { REC }
   | "fn" { FN }
   | "datatype" { DATATYPE }
   | "case" { CASE }

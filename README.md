@@ -4,8 +4,8 @@ A small, data-oriented scripting language with Standard ML-inspired syntax,
 implemented in OxCaml, with Menhir and ocamllex.
 
 **Planning choices:** No C FFI, classes, methods, or `switch` statement.
-Bindings use `val`, functions use `fun` or `fn`, variants use `datatype`,
-and branching uses SML-style `case ... of`.
+Bindings use `val`, functions are `fn` values (with `val rec` for recursion),
+variants use `datatype`, and branching uses SML-style `case ... of`.
 
 ## Build
 
@@ -34,7 +34,7 @@ Create `smoke.ox`:
 ```sml
 #!/usr/bin/env ox
 val numbers = [1, 2, 3, 4, 5]
-fun sum xs = L.foldl (fn (n, acc) => n + acc) 0 xs
+val sum = fn xs => L.foldl (fn (n, acc) => n + acc) 0 xs
 val _ = P.printf "%d\n" (sum numbers)
 ```
 
@@ -73,7 +73,7 @@ In a pipeline, partial application is supported: `xs |> L.map f` is
 
 ```sml
 datatype result = Ok of int | Error of string
-fun describe result =
+val describe = fn result =>
   case result of
       Ok n => P.sprintf "%d" n
     | Error msg => msg
@@ -100,7 +100,7 @@ Process results are records with `status`, `stdout`, and `stderr`.
 ## Language subset
 
 Integers, floats, strings, booleans, lists (`[1, 2]`), arrays (`[|1, 2|]`),
-tuples (`(1, 2)`), records (`{x = 1, y = 2}`), functions, recursion,
+tuples (`(1, 2)`), records (`{x = 1, y = 2}`), functions, recursion through `val rec`,
 `if ... then ... else ...`, `do ... end`, constructors, and `case`.
 Inside `do`, every declaration ends with `;` and the final expression
 is the result: `do val x = 1; x + 2 end`. The last expression does not
@@ -109,7 +109,7 @@ successive lines. Record punning is supported: `{x, y}` is equivalent to
 `{x = x, y = y}` and constructs a new record from the variables in scope.
 
 ```sml
-fun advance (state, delta) =
+val advance = fn (state, delta) =>
   do
     val position = state.position + delta;
     val stops = state.stops + 1;
@@ -148,4 +148,36 @@ ox examples/2025/day02.ox examples/2025/day02.txt
 sh examples/2025/check.sh
 ```
 
-The examples require no further language features beyond Patch 002.
+The AoC examples use Patch 006 `val`/`val rec` function declarations.
+
+## Patch 006: functions are values
+
+The `fun` keyword is removed from ox source. Use `val` and `fn` for functions;
+recursive functions use `val rec` and must have a lambda initializer.
+Parenthesized lambdas are permitted. Multi-argument functions are written
+using tuples or nested `fn` expressions.
+
+```sml
+val square = fn x => x * x
+val add = fn x => fn y => x + y
+val rec factorial = fn n =>
+  if n = 0 then 1 else n * factorial (n - 1)
+```
+
+Within `do ... end`, each `val` declaration (including `val rec`) must end
+with `;`, and the final result expression has no semicolon.
+
+```sml
+val result =
+  do
+    val rec loop = fn (n, total) =>
+      if n = 0 then total else loop (n - 1, total + n);
+    loop (5, 0)
+  end
+```
+
+`val rec x = x + 1` is a syntax error. `val f = fn x => f x` does not
+create a recursive binding; use `val rec` when the body refers to `f`.
+
+Run `sh examples/2025/check.sh` for both AoC samples and the recursion
+smoke test. `ox check` parses syntax but is not yet a type checker.

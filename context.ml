@@ -39,13 +39,14 @@ let rec dependencies_expr expr =
     | EInt _ | EFloat _ | EBool _ | EString _ | EUnit | EVar _ -> [])
   in go expr
 and dependencies_decl decl = match decl.node with
-  | DVal (_, x) | DFun (_, _, x) -> dependencies_expr x
+  | DVal (_, x) | DValRec (_, x) -> dependencies_expr x
   | DDatatype _ -> []
 
 let describe_decl decl =
   let kind, names = match decl.node with
+    | DVal (PVar name, { node = EFn _; _ }) -> "function", [name]
     | DVal (p, _) -> "value", names_pattern p
-    | DFun (name, _, _) -> "function", [name]
+    | DValRec (name, _) -> "function", [name]
     | DDatatype (name, _) -> "datatype", [name] in
   let line = decl.at.first.Lexing.pos_lnum in
   let last = decl.at.last.Lexing.pos_lnum in

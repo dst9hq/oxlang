@@ -45,3 +45,7 @@ is intended as an example; large real inputs may require candidate generation.
 Puzzle descriptions:
 - https://adventofcode.com/2025/day/1
 - https://adventofcode.com/2025/day/2
+
+Patch 006 expresses all functions with `val name = fn ... => ...` and
+recursion with `val rec name = fn ... => ...`. The puzzle data models
+(`datatype` and records) remain separate from their transformations.

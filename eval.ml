@@ -189,20 +189,14 @@ and declare env decl =
         (match match_pattern pat (eval env value) with
          | Some pairs -> extend env pairs
          | None -> fail "val pattern does not match")
-    | DFun (name, args, body) ->
-        let cell = ref Unit in
-        let recursive_env = (name, cell) :: env in
-        let rec curry = function
-          | [] -> eval recursive_env body
-          | [pat] -> Closure (pat, body, recursive_env)
-          | pat :: rest ->
-              let nested = List.fold_right
-                (fun p b -> { node = EFn (p, b); at = body.at })
-                rest body in
-              Closure (pat, nested, recursive_env)
-        in
-        cell := curry args;
-        recursive_env
+    | DValRec (name, rhs) ->
+        (match rhs.node with
+         | EFn (pat, body) ->
+             let cell = ref Unit in
+             let recursive_env = (name, cell) :: env in
+             cell := Closure (pat, body, recursive_env);
+             recursive_env
+         | _ -> fail "val rec requires a fn initializer")
     | DDatatype (_, constructors) ->
         List.fold_left (fun env (name, payload) ->
           let ctor = match payload with
