@@ -120,3 +120,17 @@ inferred function types or proven call graphs.
 
 This repository is an initial implementation. Test the actual build
 with your OxCaml toolchain before relying on it for Advent of Code.
+
+## 2025 Advent of Code sample solutions
+
+See [`examples/2025/`](examples/2025/README.md) for complete Day 1 and
+Day 2 scripts, official sample inputs, expected answers for both parts,
+and `check.sh`. Each script takes an input filename from `argv`.
+
+```sh
+ox examples/2025/day01.ox examples/2025/day01.txt
+ox examples/2025/day02.ox examples/2025/day02.txt
+sh examples/2025/check.sh
+```
+
+The examples require no further language features beyond Patch 002.
