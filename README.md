@@ -102,8 +102,23 @@ Process results are records with `status`, `stdout`, and `stderr`.
 Integers, floats, strings, booleans, lists (`[1, 2]`), arrays (`[|1, 2|]`),
 tuples (`(1, 2)`), records (`{x = 1, y = 2}`), functions, recursion,
 `if ... then ... else ...`, `do ... end`, constructors, and `case`.
-Inside `do`, declarations are separated by `;` and the final expression
-is the result: `do val x = 1; x + 2 end`.
+Inside `do`, every declaration ends with `;` and the final expression
+is the result: `do val x = 1; x + 2 end`. The last expression does not
+need a semicolon. Record fields use commas, including leading commas on
+successive lines. Record punning is supported: `{x, y}` is equivalent to
+`{x = x, y = y}` and constructs a new record from the variables in scope.
+
+```sml
+fun advance (state, delta) =
+  do
+    val position = state.position + delta;
+    val stops = state.stops + 1;
+    { position
+    , stops
+    }
+  end
+```
+
 At top level, effects are written `val _ = ...` for this initial release.
 
 Zero-based indexing uses `L.nth xs 0` and `A.get arr 0`.

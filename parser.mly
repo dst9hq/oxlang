@@ -162,3 +162,4 @@ atom:
 
 record_field:
   | name=IDENT EQ value=expr { (name, value) }
+  | name=IDENT { (name, e $startpos $endpos (EVar name)) }

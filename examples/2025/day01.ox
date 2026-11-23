@@ -29,10 +29,15 @@ fun crossings (state, turn) =
 
 fun advance (state, turn) =
   do
-    val position = ((state.position + movement turn) mod 100 + 100) mod 100;
-    {position = position,
-     stops = state.stops + (if position = 0 then 1 else 0),
-     passes = state.passes + crossings (state, turn)}
+    val moved = (state.position + movement turn) mod 100 + 100;
+    val position = moved mod 100;
+    val stops = state.stops + (if position = 0 then 1 else 0);
+    val passes = state.passes + crossings (state, turn);
+
+    { position
+    , stops
+    , passes
+    }
   end
 
 val input = U.read (L.hd argv)
