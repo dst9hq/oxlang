@@ -1,0 +1,11 @@
+(ocamllex lexer)
+
+(menhir
+ (modules parser)
+ (flags --explain))
+
+(executable
+ (name main)
+ (public_name ox)
+ (modules ast lexer parser eval prelude context main)
+ (libraries unix str))
