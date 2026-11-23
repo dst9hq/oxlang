@@ -30,6 +30,7 @@ and expr_desc =
   | ERecord of (string * expr) list
   | EField of expr * string
   | EApp of expr * expr
+  | EPipe of expr * expr
   | ENeg of expr
   | EBin of string * expr * expr
   | EIf of expr * expr * expr

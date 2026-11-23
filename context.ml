@@ -28,7 +28,7 @@ let rec dependencies_expr expr =
       | EField ({ node = EVar module_; _ }, field) -> [module_ ^ "." ^ field]
       | _ -> [] in
     self @ (match expr.node with
-    | EApp (f, x) | EBin (_, f, x) -> go f @ go x
+    | EApp (f, x) | EPipe (f, x) | EBin (_, f, x) -> go f @ go x
     | EField (x, _) | ENeg x -> go x
     | EList xs | EArray xs | ETuple xs -> List.concat_map go xs
     | ERecord xs -> List.concat_map (fun (_, x) -> go x) xs

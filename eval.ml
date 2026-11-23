@@ -123,6 +123,10 @@ and eval env expr =
         (match List.assoc_opt field (as_record (eval env x)) with
          | Some v -> v | None -> fail "unknown field: %s" field)
     | EApp (f, x) -> apply (eval env f) (eval env x)
+    | EPipe (x, f) ->
+        let value = eval env x in
+        let fn = eval env f in
+        apply fn value
     | ENeg x ->
         (match eval env x with Int i -> Int (-i) | Float f -> Float (-. f)
          | _ -> fail "unary - expects a number")
@@ -150,6 +154,8 @@ and eval env expr =
 
 and binary op a b =
   match op, a, b with
+  | "o", ((Native _ | Closure _) as f), ((Native _ | Closure _) as g) ->
+      Native (fun x -> apply f (apply g x))
   | "+", Int x, Int y -> Int (x + y)
   | "-", Int x, Int y -> Int (x - y)
   | "*", Int x, Int y -> Int (x * y)

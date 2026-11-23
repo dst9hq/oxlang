@@ -37,6 +37,7 @@ rule token = parse
   | "orelse" { ORELSE }
   | "div" { DIV }
   | "mod" { MOD }
+  | "o" { O }
   | '_' { UNDERSCORE }
   | alpha ident_char* as s { IDENT s }
   | upper ident_char* as s { UIDENT s }
@@ -44,6 +45,7 @@ rule token = parse
   | "|]" { RARRAY }
   | "=>" { DARROW }
   | "::" { CONS }
+  | "|>" { PIPE }
   | "/=" { NE }
   | "<=" { LE }
   | ">=" { GE }

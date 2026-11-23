@@ -8,11 +8,11 @@ let d a b node = located a b node
 %token <float> FLOAT
 %token <string> STRING IDENT UIDENT
 %token VAL FUN FN DATATYPE OF CASE IF THEN ELSE DO END
-%token TRUE FALSE ANDALSO ORELSE DIV MOD
+%token TRUE FALSE ANDALSO ORELSE DIV MOD O
 %token LPAREN RPAREN LBRACK RBRACK LARRAY RARRAY
 %token LBRACE RBRACE COMMA SEMI DOT
 %token EQ NE LT GT LE GE PLUS MINUS STAR SLASH AT CARET CONS
-%token BAR DARROW UNDERSCORE EOF
+%token BAR DARROW UNDERSCORE PIPE EOF
 
 %start <Ast.program> program
 %%
@@ -69,7 +69,7 @@ expr:
       { e $startpos $endpos (ECase (x, bs)) }
   | DO ds=list(block_decl) x=expr END
       { e $startpos $endpos (EDo (ds, x)) }
-  | x=or_expr { x }
+  | x=pipe_expr { x }
 
 block_decl:
   | d=decl SEMI { d }
@@ -80,12 +80,23 @@ branches:
 branch:
   | p=pattern DARROW x=expr { (p, x) }
 
+(* The pipe is left-associative and binds less tightly than all other
+   infix operators. Retain its own AST node to evaluate data before function. *)
+pipe_expr:
+  | a=pipe_expr PIPE f=or_expr { e $startpos $endpos (EPipe (a, f)) }
+  | x=or_expr { x }
+
 or_expr:
   | a=or_expr ORELSE b=and_expr { e $startpos $endpos (EBin ("orelse", a, b)) }
   | x=and_expr { x }
 
 and_expr:
-  | a=and_expr ANDALSO b=cmp_expr { e $startpos $endpos (EBin ("andalso", a, b)) }
+  | a=and_expr ANDALSO b=compose_expr { e $startpos $endpos (EBin ("andalso", a, b)) }
+  | x=compose_expr { x }
+
+(* Standard ML-style, right-associative function composition: f o g. *)
+compose_expr:
+  | f=cmp_expr O g=compose_expr { e $startpos $endpos (EBin ("o", f, g)) }
   | x=cmp_expr { x }
 
 cmp_expr:

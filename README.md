@@ -49,6 +49,26 @@ val total = L.foldl (fn (x, acc) => x + acc) 0 numbers
 val _ = P.printf "%d\n" total
 ```
 
+## Function composition and forward application (Patch 002)
+
+`o` constructs a composed function (`f o g` means `fn x => f (g x)`).
+It associates to the right. `|>` passes a value to a function; it
+associates to the left and binds more loosely than other operators.
+A pipe evaluates its **left-hand value first**, before evaluating its
+right-hand function.
+
+```sml
+#!/usr/bin/env ox
+val numbers = U.read "input.txt" |> S.lines |> L.map I.parse
+val read_numbers = L.map I.parse o S.lines o U.read
+val same = read_numbers "input.txt"
+val total = numbers |> L.foldl (fn (x, acc) => x + acc) 0
+val _ = P.printf "%d\n" total
+```
+
+In a pipeline, partial application is supported: `xs |> L.map f` is
+`L.map f xs`. Parenthesize complex functions, e.g. `xs |> (fn xs => xs)`.
+
 ## Datatypes and cases
 
 ```sml
