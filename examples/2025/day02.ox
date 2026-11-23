@@ -10,8 +10,8 @@ val parse_range = fn text =>
   end
 
 val rec equal_blocks = fn text => fn width => fn offset =>
-  if offset = S.length text then true
-  else if S.sub text offset width = S.sub text 0 width then
+  if offset == S.length text then true
+  else if S.sub text offset width == S.sub text 0 width then
     equal_blocks text width (offset + width)
   else false
 
@@ -30,7 +30,7 @@ val invalid = fn (rule, id) =>
     val text = I.to_string id;
     case rule of
         Twice =>
-          if S.length text mod 2 = 0 then
+          if S.length text mod 2 == 0 then
             repeated text (S.length text div 2)
           else false
       | AnyRepeat => any_width text 1

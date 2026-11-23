@@ -22,7 +22,7 @@ val crossings = fn (state, turn) =>
   case turn of
       Right clicks => (state.position + clicks) div 100
     | Left clicks =>
-        if state.position = 0 then clicks div 100
+        if state.position == 0 then clicks div 100
         else if clicks >= state.position then
           1 + (clicks - state.position) div 100
         else 0
@@ -31,7 +31,7 @@ val advance = fn (state, turn) =>
   do
     val moved = (state.position + movement turn) mod 100 + 100;
     val position = moved mod 100;
-    val stops = state.stops + (if position = 0 then 1 else 0);
+    val stops = state.stops + (if position == 0 then 1 else 0);
     val passes = state.passes + crossings (state, turn);
 
     { position

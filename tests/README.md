@@ -29,3 +29,5 @@ too, so missing files and unrelated crashes cannot masquerade as success.
 
 This is a proposed conformance suite, not an assertion that tests were run
 under OxCaml. It requires building the interpreter first.
+
+Patch 008: `==` is the comparison operator; `=` is reserved for bindings and fields. `equality.ox` verifies both comparison operators and record equality, while `old-equality.ox` ensures `if 1 = 1` is rejected.

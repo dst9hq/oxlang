@@ -47,6 +47,7 @@ rule token = parse
   | "::" { CONS }
   | "|>" { PIPE }
   | "/=" { NE }
+  | "==" { EQEQ }
   | "<=" { LE }
   | ">=" { GE }
   | '(' { LPAREN }

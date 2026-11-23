@@ -72,6 +72,7 @@ check_syntax records
 check_syntax datatypes
 check_syntax composition
 check_syntax blocks
+check_syntax equality
 
 check_output bindings
 check_output records
@@ -83,12 +84,14 @@ check_output composition
 check_output mutation
 check_output files fixtures/numbers.txt
 check_output process
+check_output equality
 
 check_failure check old-fun 'syntax error'
 check_failure check invalid-rec 'syntax error'
 check_failure check missing-semicolon 'syntax error'
 check_failure check invalid-record 'syntax error'
 check_failure check old-inequality 'syntax error'
+check_failure check old-equality 'syntax error'
 check_failure run unbound-name 'unbound name'
 check_failure run division-by-zero 'division by zero'
 check_failure run non-exhaustive 'non-exhaustive case expression'

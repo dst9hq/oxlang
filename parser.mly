@@ -11,7 +11,7 @@ let d a b node = located a b node
 %token TRUE FALSE ANDALSO ORELSE DIV MOD O
 %token LPAREN RPAREN LBRACK RBRACK LARRAY RARRAY
 %token LBRACE RBRACE COMMA SEMI DOT
-%token EQ NE LT GT LE GE PLUS MINUS STAR SLASH AT CARET CONS
+%token EQ EQEQ NE LT GT LE GE PLUS MINUS STAR SLASH AT CARET CONS
 %token BAR DARROW UNDERSCORE PIPE EOF
 
 %start <Ast.program> program
@@ -107,7 +107,7 @@ compose_expr:
   | x=cmp_expr { x }
 
 cmp_expr:
-  | a=append_expr EQ b=append_expr { e $startpos $endpos (EBin ("=", a, b)) }
+  | a=append_expr EQEQ b=append_expr { e $startpos $endpos (EBin ("==", a, b)) }
   | a=append_expr NE b=append_expr { e $startpos $endpos (EBin ("/=", a, b)) }
   | a=append_expr LT b=append_expr { e $startpos $endpos (EBin ("<", a, b)) }
   | a=append_expr GT b=append_expr { e $startpos $endpos (EBin (">", a, b)) }

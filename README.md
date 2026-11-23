@@ -127,7 +127,7 @@ Names `L`, `A`, `S`, `P`, `U`, `I`, `T` alias their full modules.
 `T` is mutable and string-keyed; persistent hash maps are deferred.
 
 `P.printf`/`P.sprintf` currently support `%d`, `%s`, `%f`, `%%` only.
-Inequality uses Haskell-style `/=`; `<>` is not an ox operator.
+Equality and inequality use `==` and `/=` in ox expressions. Single `=` remains for `val`, `datatype`, and record-field bindings; `<>` is not an ox operator.
 No static type inference or pattern exhaustiveness analysis yet.
 The `check` command currently validates syntax, not types or IO effects.
 Context outputs contain symbol locations and qualified references, not
@@ -161,7 +161,7 @@ using tuples or nested `fn` expressions.
 val square = fn x => x * x
 val add = fn x => fn y => x + y
 val rec factorial = fn n =>
-  if n = 0 then 1 else n * factorial (n - 1)
+  if n == 0 then 1 else n * factorial (n - 1)
 ```
 
 Within `do ... end`, each `val` declaration (including `val rec`) must end
@@ -171,7 +171,7 @@ with `;`, and the final result expression has no semicolon.
 val result =
   do
     val rec loop = fn (n, total) =>
-      if n = 0 then total else loop (n - 1, total + n);
+      if n == 0 then total else loop (n - 1, total + n);
     loop (5, 0)
   end
 ```
@@ -191,3 +191,9 @@ See [`tests/README.md`](tests/README.md).
 
 Every subsequent language-semantics patch must include a regression test
 in `tests/`; `examples/` remains for human-readable Advent of Code solutions.
+
+## Patch 008: equality spelling
+
+Equality is `==`, inequality is `/=`. Single `=` remains the declaration/field
+separator, for example `val x = 3`, `datatype color = Red | Blue`, and
+`{x = 3}`. `if x = 3 then ...` is no longer legal; use `if x == 3 then ...`.
