@@ -163,7 +163,7 @@ and binary op a b =
   | "@", List xs, List ys -> List (xs @ ys)
   | "::", x, List xs -> List (x :: xs)
   | "=", x, y -> Bool (equal x y)
-  | "<>", x, y -> Bool (not (equal x y))
+  | "/=", x, y -> Bool (not (equal x y))
   | ("<" | ">" | "<=" | ">="), Int x, Int y ->
       Bool (compare_order op (compare x y))
   | ("<" | ">" | "<=" | ">="), Float x, Float y ->

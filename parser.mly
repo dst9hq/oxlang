@@ -90,7 +90,7 @@ and_expr:
 
 cmp_expr:
   | a=append_expr EQ b=append_expr { e $startpos $endpos (EBin ("=", a, b)) }
-  | a=append_expr NE b=append_expr { e $startpos $endpos (EBin ("<>", a, b)) }
+  | a=append_expr NE b=append_expr { e $startpos $endpos (EBin ("/=", a, b)) }
   | a=append_expr LT b=append_expr { e $startpos $endpos (EBin ("<", a, b)) }
   | a=append_expr GT b=append_expr { e $startpos $endpos (EBin (">", a, b)) }
   | a=append_expr LE b=append_expr { e $startpos $endpos (EBin ("<=", a, b)) }

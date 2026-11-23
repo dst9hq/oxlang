@@ -44,7 +44,7 @@ rule token = parse
   | "|]" { RARRAY }
   | "=>" { DARROW }
   | "::" { CONS }
-  | "<>" { NE }
+  | "/=" { NE }
   | "<=" { LE }
   | ">=" { GE }
   | '(' { LPAREN }

@@ -92,6 +92,7 @@ Names `L`, `A`, `S`, `P`, `U`, `I`, `T` alias their full modules.
 `T` is mutable and string-keyed; persistent hash maps are deferred.
 
 `P.printf`/`P.sprintf` currently support `%d`, `%s`, `%f`, `%%` only.
+Inequality uses Haskell-style `/=`; `<>` is not an ox operator.
 No static type inference or pattern exhaustiveness analysis yet.
 The `check` command currently validates syntax, not types or IO effects.
 Context outputs contain symbol locations and qualified references, not
