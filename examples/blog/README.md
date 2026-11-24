@@ -7,7 +7,7 @@ front matter format.
 
 ## Dependencies
 
-- `ox` built from Patch 010, on your `PATH` (or use `dune exec ./main.exe --`)
+- `ox` if it's on your `PATH` (or use `dune exec ./main.exe --`)
 - `pandoc`
 - Standard `mkdir` and `cp` commands
 - Optional: `python3` to preview the generated site
