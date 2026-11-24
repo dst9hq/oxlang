@@ -1,0 +1,471 @@
+diff --git a/examples/blog/README.md b/examples/blog/README.md
+new file mode 100644
+index 0000000..44afd54
+--- /dev/null
++++ b/examples/blog/README.md
+@@ -0,0 +1,83 @@
++# ox static blog generator
++
++A complete, dependency-light example for ox Patch 010: chronological posts,
++archive, tag pages, Atom 1.0 feed, sitemap, robots.txt, about page, 404 page,
++and a monochrome stylesheet. Source posts are Markdown with a fixed six-line
++front matter format.
++
++## Dependencies
++
++- `ox` built from Patch 010, on your `PATH` (or use `dune exec ./main.exe --`)
++- `pandoc`
++- Standard `mkdir` and `cp` commands
++- Optional: `python3` to preview the generated site
++
++## Build
++
++From the ox repository root:
++
++```sh
++ox examples/blog/build.ox examples/blog examples/blog/_site
++python3 -m http.server --directory examples/blog/_site 8000
++```
++
++Run `sh examples/blog/verify.sh` to build into a temporary directory and
++check output pages, tag contents, Atom entries, and sitemap XML (requires
++`python3`).
++
++Open http://localhost:8000/ to preview. Edit `site.origin` in `build.ox`
++before publishing so feed and sitemap URLs use your domain.
++
++Or run without installing `ox`:
++
++```sh
++dune exec ./main.exe -- examples/blog/build.ox examples/blog examples/blog/_site
++```
++
++## Post format
++
++Name posts `YYYY-MM-DD-slug.md` so lexicographic sorting yields chronological
++order. Slugs and tags must contain only lowercase ASCII letters, digits, and
++hyphens. Use these exact first six lines, with unquoted plain-text values:
++
++```markdown
++---
++title: My title
++date: 2026-11-23
++description: A one-sentence summary.
++tags: ox, programming
++---
++
++Here begins the Markdown body.
++```
++
++The metadata parser is intentionally small: it assumes this order, enforces
++simple slugs, and checks date length but does not perform full YAML or date
++validation. The Markdown body is processed by Pandoc. Keep post source and
++metadata trusted; `Process.run` executes tools without invoking a shell, but
++Pandoc may process embedded raw HTML and external references.
++
++## Generated output
++
++```text
++_site/
++├── index.html
++├── archive.html
++├── about.html
++├── 404.html
++├── atom.xml
++├── sitemap.xml
++├── robots.txt
++├── style.css
++├── posts/
++│   ├── 2026-11-20-first-post.html
++│   └── 2026-11-23-data-and-effects.html
++└── tags/
++    ├── ox.html
++    ├── programming.html
++    └── writing.html
++```
++
++A build writes the current pages but does not remove previously generated
++files. For a clean rebuild, delete the output directory yourself first.
++The example uses absolute `/` URLs; publish it at a domain root.
+diff --git a/examples/blog/about.md b/examples/blog/about.md
+new file mode 100644
+index 0000000..9e5550c
+--- /dev/null
++++ b/examples/blog/about.md
+@@ -0,0 +1,8 @@
++# About
++
++This sample site is generated entirely by an **ox** script. The script uses
++`Path.glob` to discover posts, `U.read` and `U.write` for files, the list
++prelude for transformations, and `Process.run` to invoke Unix tools.
++
++The site requires no JavaScript, CSS framework, database, server-side
++runtime, or external static-site generator.
+diff --git a/examples/blog/assets/style.css b/examples/blog/assets/style.css
+new file mode 100644
+index 0000000..e59fc4c
+--- /dev/null
++++ b/examples/blog/assets/style.css
+@@ -0,0 +1,4 @@
++:root{color-scheme:dark;font-family:Georgia,'Times New Roman',serif;background:#080808;color:#eee}
++*{box-sizing:border-box}body{max-width:760px;margin:0 auto;padding:2rem 1.25rem;line-height:1.65}
++a{color:#ddd;text-underline-offset:.2em}a:hover{color:#fff}.site-header{display:flex;justify-content:space-between;gap:1rem;align-items:center;border-bottom:1px solid #555;padding-bottom:1rem}.brand{font-weight:bold;text-decoration:none}.site-header nav{display:flex;gap:1.25rem;font:90% ui-monospace,monospace}main{padding:3rem 0}h1,h2,h3{line-height:1.25}h1{font-size:2.2rem}.intro,.meta,time,footer{color:#aaa}.posts{list-style:none;padding:0}.post{border-bottom:1px solid #333;padding:1.5rem 0}.post h2{margin:.3rem 0}.post h2 a{text-decoration:none}.post p{margin:.5rem 0}.tag{font:80% ui-monospace,monospace;margin-right:.8rem}article p{margin:1.2rem 0}pre{padding:1rem;overflow-x:auto;background:#161616;border:1px solid #333}code{font-family:ui-monospace,monospace}blockquote{border-left:2px solid #aaa;padding-left:1rem;margin-left:0}img{max-width:100%}footer{border-top:1px solid #555;padding-top:1rem;font-size:.85rem}
++@media(max-width:500px){.site-header{align-items:flex-start;flex-direction:column}main{padding:2rem 0}}
+diff --git a/examples/blog/build.ox b/examples/blog/build.ox
+new file mode 100644
+index 0000000..f78c7fb
+--- /dev/null
++++ b/examples/blog/build.ox
+@@ -0,0 +1,262 @@
++#!/usr/bin/env ox
++
++# A static blog generator using the ox 0.1 prelude and system utilities.
++# Usage: ox build.ox BLOG_ROOT OUTPUT_DIRECTORY
++
++val require = (condition, message) =>
++  if condition then ()
++  else
++    do
++      val _ = eprint message;
++      exit 2
++    end
++
++val run = (args) =>
++  do
++    val result = Process.run args;
++    if result.status == 0 then result
++    else
++      do
++        val _ = eprint (S.join " " args);
++        val _ = eprint result.stderr;
++        exit result.status
++      end
++  end
++
++val _ = require (L.length argv == 2, "usage: ox build.ox BLOG_ROOT OUTPUT_DIRECTORY")
++val root = L.nth argv 0
++val output = L.nth argv 1
++
++val site = {
++    title = "ox field notes"
++  , author = "ox contributors"
++  , origin = "https://example.org"
++  , description = "A small static blog built with ox and Unix utilities."
++}
++
++val replace = (before, after, source) => S.join after (S.split before source)
++
++val escape = (value) =>
++  do
++    val a = replace ("&", "&amp;", value);
++    val b = replace ("<", "&lt;", a);
++    val c = replace (">", "&gt;", b);
++    replace ("\"", "&quot;", c)
++  end
++
++val safe_char = (char) =>
++  (char >= "a" andalso char <= "z") orelse
++  (char >= "0" andalso char <= "9") orelse
++  char == "-"
++
++val safe_slug = rec (value, offset) =>
++  if offset == S.length value then true
++  else
++    do
++      val char = S.sub value offset 1;
++      if safe_char char then safe_slug (value, offset + 1)
++      else false
++    end
++
++val read_field = (name, line) =>
++  do
++    val parts = S.split ": " line;
++    val _ = require (L.hd parts == name andalso L.length parts > 1,
++      "expected metadata field: " ^ name);
++    S.join ": " (L.tl parts)
++  end
++
++val read_post = (source) =>
++  do
++    val text = U.read source;
++    val lines = S.lines text;
++    val _ = require (L.length lines >= 6, "short post: " ^ source);
++    val _ = require (L.nth lines 0 == "---" andalso L.nth lines 5 == "---",
++      "expected six-line YAML front matter: " ^ source);
++    val title = read_field ("title", L.nth lines 1);
++    val date = read_field ("date", L.nth lines 2);
++    val description = read_field ("description", L.nth lines 3);
++    val tags = S.split ", " (read_field ("tags", L.nth lines 4));
++    val filename = Path.basename source;
++    val slug = S.sub filename 0 (S.length filename - 3);
++    val _ = require (S.length slug > 0 andalso safe_slug (slug, 0),
++      "unsafe post slug: " ^ filename);
++    val _ = require (S.length date == 10, "date must be YYYY-MM-DD: " ^ source);
++    val validate_tag = (tag) => require
++      (S.length tag > 0 andalso safe_slug (tag, 0), "unsafe tag: " ^ tag);
++    val _ = L.app validate_tag tags;
++
++    { source
++    , slug
++    , title
++    , date
++    , description
++    , tags
++    }
++  end
++
++val post_url = (post) => site.origin ^ "/posts/" ^ post.slug ^ ".html"
++val tag_url = (tag) => "/tags/" ^ tag ^ ".html"
++
++val layout = (title, description, body) =>
++  S.join "\n" [
++    "<!doctype html>"
++  , "<html lang=\"en\">"
++  , "<head>"
++  , "<meta charset=\"utf-8\">"
++  , "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
++  , "<meta name=\"description\" content=\"" ^ escape description ^ "\">"
++  , "<title>" ^ escape title ^ " · " ^ escape site.title ^ "</title>"
++  , "<link rel=\"stylesheet\" href=\"/style.css\">"
++  , "<link rel=\"alternate\" type=\"application/atom+xml\" href=\"/atom.xml\">"
++  , "</head>"
++  , "<body>"
++  , "<header class=\"site-header\"><a class=\"brand\" href=\"/\">" ^ escape site.title ^ "</a>"
++  , "<nav><a href=\"/archive.html\">archive</a><a href=\"/about.html\">about</a><a href=\"/atom.xml\">feed</a></nav></header>"
++  , "<main>"
++  , body
++  , "</main>"
++  , "<footer>© " ^ escape site.author ^ " · generated by ox</footer>"
++  , "</body></html>"
++  ]
++
++val tag_link = (tag) =>
++  "<a class=\"tag\" href=\"" ^ tag_url tag ^ "\">#" ^ escape tag ^ "</a>"
++
++val tag_links = (tags) => S.join " " (L.map tag_link tags)
++
++val listing = (post) =>
++  S.join "\n" [
++    "<li class=\"post\">"
++  , "<time datetime=\"" ^ escape post.date ^ "\">" ^ escape post.date ^ "</time>"
++  , "<h2><a href=\"/posts/" ^ post.slug ^ ".html\">" ^ escape post.title ^ "</a></h2>"
++  , "<p>" ^ escape post.description ^ "</p>"
++  , "<div class=\"tags\">" ^ tag_links post.tags ^ "</div>"
++  , "</li>"
++  ]
++
++val post_list = (posts) =>
++  "<ul class=\"posts\">\n" ^ S.join "\n" (L.map listing posts) ^ "\n</ul>"
++
++val take = rec (n, xs) =>
++  if n <= 0 then []
++  else
++    case xs of
++        [] => []
++      | first :: rest => first :: take (n - 1, rest)
++
++val has = rec (needle, xs) =>
++  case xs of
++      [] => false
++    | first :: rest => if needle == first then true else has (needle, rest)
++
++val add_unique = (tag, tags) =>
++  if has (tag, tags) then tags
++  else tags @ [tag]
++
++val gather_tags = (post, tags) => L.foldl add_unique tags post.tags
++
++val write_post = (post) =>
++  do
++    val converted = run ["pandoc", "--from=markdown+yaml_metadata_block",
++      "--to=html5", "--wrap=none", post.source];
++    val article = S.join "\n" [
++      "<article>"
++    , "<h1>" ^ escape post.title ^ "</h1>"
++    , "<p class=\"meta\"><time datetime=\"" ^ escape post.date ^ "\">" ^ escape post.date ^ "</time></p>"
++    , "<div class=\"tags\">" ^ tag_links post.tags ^ "</div>"
++    , converted.stdout
++    , "</article>"
++    ];
++    val html = layout (post.title, post.description, article);
++    val target = output ^ "/posts/" ^ post.slug ^ ".html";
++    val _ = U.write target html;
++    P.printf "wrote %s\n" target
++  end
++
++val atom_entry = (post) =>
++  S.join "\n" [
++    "<entry>"
++  , "<title>" ^ escape post.title ^ "</title>"
++  , "<id>" ^ escape (post_url post) ^ "</id>"
++  , "<link href=\"" ^ escape (post_url post) ^ "\"/>"
++  , "<updated>" ^ escape post.date ^ "T00:00:00Z</updated>"
++  , "<summary>" ^ escape post.description ^ "</summary>"
++  , "</entry>"
++  ]
++
++val sitemap_url = (url, date) =>
++  "<url><loc>" ^ escape url ^ "</loc><lastmod>" ^ escape date ^ "</lastmod></url>"
++
++val sitemap_post = (post) => sitemap_url (post_url post, post.date)
++
++val _ = run ["mkdir", "-p", output ^ "/posts", output ^ "/tags"]
++val _ = run ["cp", root ^ "/assets/style.css", output ^ "/style.css"]
++
++# Path.glob sorts lexicographically. ISO-date filenames put newer posts last.
++val posts = L.rev (L.map read_post (Path.glob (root ^ "/posts/*.md")))
++val tags = L.foldl gather_tags [] posts
++val last_date = if L.length posts == 0 then "1970-01-01" else (L.hd posts).date
++
++val _ = L.app write_post posts
++
++val home = S.join "\n" [
++  "<h1>" ^ escape site.title ^ "</h1>"
++, "<p class=\"intro\">" ^ escape site.description ^ "</p>"
++, "<h2>Recent writing</h2>"
++, post_list (take (5, posts))
++, "<p><a href=\"/archive.html\">All posts →</a></p>"
++]
++val _ = U.write (output ^ "/index.html") (layout (site.title, site.description, home))
++val _ = U.write (output ^ "/archive.html")
++  (layout ("Archive", "All articles", "<h1>Archive</h1>" ^ post_list posts))
++
++val write_tag = (tag) =>
++  do
++    val belongs = (post) => has (tag, post.tags);
++    val matching = L.filter belongs posts;
++    val html = layout ("#" ^ tag, "Articles tagged " ^ tag,
++      "<h1>#" ^ escape tag ^ "</h1>" ^ post_list matching);
++    U.write (output ^ tag_url tag) html
++  end
++
++val _ = L.app write_tag tags
++
++val about = run ["pandoc", "--from=markdown", "--to=html5", "--wrap=none", root ^ "/about.md"]
++val _ = U.write (output ^ "/about.html")
++  (layout ("About", "About this blog", "<article>" ^ about.stdout ^ "</article>"))
++
++val feed = S.join "\n" [
++  "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
++, "<feed xmlns=\"http://www.w3.org/2005/Atom\">"
++, "<title>" ^ escape site.title ^ "</title>"
++, "<id>" ^ escape site.origin ^ "/</id>"
++, "<link href=\"" ^ escape site.origin ^ "/\"/>"
++, "<link rel=\"self\" href=\"" ^ escape site.origin ^ "/atom.xml\"/>"
++, "<author><name>" ^ escape site.author ^ "</name></author>"
++, "<updated>" ^ last_date ^ "T00:00:00Z</updated>"
++, S.join "\n" (L.map atom_entry posts)
++, "</feed>"
++]
++val _ = U.write (output ^ "/atom.xml") feed
++
++val sitemap_tag = (tag) =>
++  sitemap_url (site.origin ^ tag_url tag, last_date)
++
++val sitemap = S.join "\n" [
++  "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
++, "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
++, sitemap_url (site.origin ^ "/", last_date)
++, sitemap_url (site.origin ^ "/archive.html", last_date)
++, sitemap_url (site.origin ^ "/about.html", last_date)
++, S.join "\n" (L.map sitemap_post posts)
++, S.join "\n" (L.map sitemap_tag tags)
++, "</urlset>"
++]
++val _ = U.write (output ^ "/sitemap.xml") sitemap
++val _ = U.write (output ^ "/robots.txt")
++  ("User-agent: *\nAllow: /\nSitemap: " ^ site.origin ^ "/sitemap.xml\n")
++val _ = U.write (output ^ "/404.html")
++  (layout ("Not found", "Page not found", "<h1>404</h1><p>This page does not exist.</p>"))
++val _ = P.printf "built %d posts and %d tag pages in %s\n"
++  (L.length posts) (L.length tags) output
+diff --git a/examples/blog/posts/2026-11-20-first-post.md b/examples/blog/posts/2026-11-20-first-post.md
+new file mode 100644
+index 0000000..7bf9e11
+--- /dev/null
++++ b/examples/blog/posts/2026-11-20-first-post.md
+@@ -0,0 +1,17 @@
++---
++title: The smallest useful blog
++date: 2026-11-20
++description: An introduction to an ox-powered static website.
++tags: ox, writing
++---
++
++A static blog only needs **source documents**, a transformation, and
++some output files. The rest is policy.
++
++## What we keep
++
++- Markdown as the authoring format.
++- HTML as the publication format.
++- The filesystem as the content database.
++
++This post was rendered by `pandoc`, launched through `Process.run`.
+diff --git a/examples/blog/posts/2026-11-23-data-and-effects.md b/examples/blog/posts/2026-11-23-data-and-effects.md
+new file mode 100644
+index 0000000..e1f7584
+--- /dev/null
++++ b/examples/blog/posts/2026-11-23-data-and-effects.md
+@@ -0,0 +1,23 @@
++---
++title: Data first, effects last
++date: 2026-11-23
++description: How an ox script separates data transformations from Unix effects.
++tags: ox, programming
++---
++
++We model a post as a record:
++
++```sml
++{ title
++, date
++, description
++, tags
++}
++```
++
++The build system transforms that data into HTML. **Only at the edges** does
++it call system utilities to create directories, convert Markdown, and write
++files.
++
++That is the point of ox: *data-oriented first, functional second, imperative
++always available*.
+diff --git a/examples/blog/verify.sh b/examples/blog/verify.sh
+new file mode 100755
+index 0000000..76b8261
+--- /dev/null
++++ b/examples/blog/verify.sh
+@@ -0,0 +1,32 @@
++#!/bin/sh
++set -eu
++root=$(CDPATH='' cd "$(dirname "$0")" && pwd)
++out=$(mktemp -d)
++trap 'rm -rf "$out"' EXIT HUP INT TERM
++ox "$root/build.ox" "$root" "$out"
++python3 - "$out" <<'PY'
++import pathlib, sys, xml.etree.ElementTree as ET
++out = pathlib.Path(sys.argv[1])
++expected = [
++    'index.html', 'archive.html', 'about.html', '404.html', 'style.css',
++    'atom.xml', 'sitemap.xml', 'robots.txt',
++    'posts/2026-11-20-first-post.html',
++    'posts/2026-11-23-data-and-effects.html',
++    'tags/ox.html', 'tags/writing.html', 'tags/programming.html',
++]
++for filename in expected:
++    assert (out / filename).is_file(), f'missing: {filename}'
++index = (out / 'index.html').read_text()
++assert 'Data first, effects last' in index
++assert 'The smallest useful blog' in index
++assert index.index('Data first, effects last') < index.index('The smallest useful blog')
++assert 'Data first, effects last' in (out / 'tags/ox.html').read_text()
++assert 'Data first, effects last' not in (out / 'tags/writing.html').read_text()
++atom = ET.parse(out / 'atom.xml').getroot()
++ns = {'a': 'http://www.w3.org/2005/Atom'}
++assert len(atom.findall('a:entry', ns)) == 2
++sitemap = ET.parse(out / 'sitemap.xml').getroot()
++sm = {'s': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
++assert len(sitemap.findall('s:url', sm)) == 8
++print('blog example: all generated pages and feeds verified')
++PY

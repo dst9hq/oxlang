@@ -49,7 +49,7 @@ program:
   | ds=list(decl) EOF { ds }
 
 decl:
-  | VAL p=pattern EQ rhs=initializer
+  | VAL p=pattern EQ rhs=decl_rhs
       { match rhs with
         | `Plain x -> d $startpos $endpos (DVal (p, x))
         | `Recursive x ->
@@ -61,7 +61,7 @@ decl:
 
 (* 'rec' is only legal on the right of a named 'val', never as an
    independently usable expression. An arrow tail is mandatory. *)
-initializer:
+decl_rhs:
   | x=expr { `Plain x }
   | REC head=pipe_expr tail=arrow_tail
       { `Recursive (make_lambda $startpos $endpos head tail) }

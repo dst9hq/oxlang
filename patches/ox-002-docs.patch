@@ -1,0 +1,129 @@
+diff --git a/README.md b/README.md
+index fe032a2..0299f09 100644
+--- a/README.md
++++ b/README.md
+@@ -230,6 +230,6 @@ val count = rec (current, upper, total) =>
+     end
+ ```
+ 
+-The Day 2 example follows this style. See `spec/definition-of-ox.tex`
++The Day 2 example follows this style. See `docs/definition-of-ox.tex`
+ for the formal grammar and semantics, updated through Patch 010. The
+-seven-file implementation budget excludes tests, examples, and the spec.
++seven-file implementation budget excludes tests, examples, and documentation.
+diff --git a/docs/.gitignore b/docs/.gitignore
+new file mode 100644
+index 0000000..b8733bd
+--- /dev/null
++++ b/docs/.gitignore
+@@ -0,0 +1,8 @@
++/text/
++*.aux
++*.idx
++*.ilg
++*.ind
++*.log
++*.out
++*.toc
+diff --git a/docs/README.md b/docs/README.md
+new file mode 100644
+index 0000000..f3c0ca4
+--- /dev/null
++++ b/docs/README.md
+@@ -0,0 +1,40 @@
++# ox documentation
++
++## Language specification
++
++Normative working language specification by E. Alvarez and GPT-6.
++
++- `definition-of-ox.tex`: editable LaTeX source (working definition 0.1.2).
++- `definition-of-ox.pdf`: compiled reading copy.
++
++Build with XeLaTeX and MakeIndex:
++
++```sh
++xelatex -interaction=nonstopmode definition-of-ox.tex
++makeindex definition-of-ox
++xelatex -interaction=nonstopmode definition-of-ox.tex
++xelatex -interaction=nonstopmode definition-of-ox.tex
++```
++
++The specification records target semantics, not a guarantee that all
++normative rules are implemented by the current interpreter. `ox check`
++currently parses; it does not typecheck.
++
++## Reference PDFs
++
++Keep original reference documents (including Standard ML publications) as
++PDFs under `docs/`; treat extracted text as a **search index**, not as a
++replacement. Text extraction can lose mathematical layout, diagrams,
++footnotes, and reading order.
++
++Install Poppler (`brew install poppler` on macOS), then run from the repo root:
++
++```sh
++bash docs/extract-text.sh
++rg -n 'recursive|function' docs/text/
++```
++
++The script mirrors `docs/**/*.pdf` into `docs/text/**/*.txt` using
++`pdftotext -layout -enc UTF-8`. Generated text is ignored by Git; PDFs and
++LaTeX source remain authoritative. Page breaks from `pdftotext` are retained.
++Scanned/image-only PDFs need OCR before useful text extraction.
+diff --git a/spec/definition-of-ox.pdf b/docs/definition-of-ox.pdf
+similarity index 100%
+rename from spec/definition-of-ox.pdf
+rename to docs/definition-of-ox.pdf
+diff --git a/spec/definition-of-ox.tex b/docs/definition-of-ox.tex
+similarity index 100%
+rename from spec/definition-of-ox.tex
+rename to docs/definition-of-ox.tex
+diff --git a/docs/extract-text.sh b/docs/extract-text.sh
+new file mode 100755
+index 0000000..33ca5fa
+--- /dev/null
++++ b/docs/extract-text.sh
+@@ -0,0 +1,17 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++command -v pdftotext >/dev/null || {
++  printf 'pdftotext is required (macOS: brew install poppler)\n' >&2
++  exit 1
++}
++
++here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
++
++while IFS= read -r -d '' pdf; do
++  relative=${pdf#"$here"/}
++  output="$here/text/${relative%.*}.txt"
++  mkdir -p "$(dirname "$output")"
++  pdftotext -layout -enc UTF-8 "$pdf" "$output"
++  printf '%s -> %s\n' "$relative" "text/${relative%.*}.txt"
++done < <(find "$here" -type f -iname '*.pdf' ! -path "$here/text/*" -print0)
+diff --git a/spec/README.md b/spec/README.md
+deleted file mode 100644
+index bd74a78..0000000
+--- a/spec/README.md
++++ /dev/null
+@@ -1,19 +0,0 @@
+-# The Definition of ox
+-
+-Normative working language specification by E. Alvarez and GPT-6.
+-
+-- `definition-of-ox.tex`: editable LaTeX source (working definition 0.1.2).
+-- `definition-of-ox.pdf`: compiled reading copy.
+-
+-Build with XeLaTeX and MakeIndex:
+-
+-```sh
+-xelatex -interaction=nonstopmode definition-of-ox.tex
+-makeindex definition-of-ox
+-xelatex -interaction=nonstopmode definition-of-ox.tex
+-xelatex -interaction=nonstopmode definition-of-ox.tex
+-```
+-
+-The specification records target semantics, not a guarantee that all
+-normative rules are implemented by the current interpreter. `ox check`
+-currently parses; it does not typecheck.

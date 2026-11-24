@@ -1,0 +1,42 @@
+
+# Dune / OxCaml
+/_build/
+/_build-*/
+/*.install
+/.merlin
+/.opam/
+/dune-workspace.dev
+
+# Generated documentation
+/docs/text/
+
+# Static blog output
+/examples/blog/_site/
+
+# Coverage and profiling
+/_coverage/
+*.prof
+
+# macOS
+.DS_Store
+.AppleDouble
+._*
+
+# Editors
+*.swp
+*.swo
+*~
+*.orig
+*.rej
+.vscode/
+.idea/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Temporary files
+*.tmp
+*.log
+

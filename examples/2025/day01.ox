@@ -27,7 +27,7 @@ val crossings = (state, turn) =>
           1 + (clicks - state.position) div 100
         else 0
 
-val advance = (state, turn) =>
+val advance = (turn, state) =>
   do
     val moved = (state.position + movement turn) mod 100 + 100;
     val position = moved mod 100;
